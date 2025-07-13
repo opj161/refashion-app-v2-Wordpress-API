@@ -1,0 +1,28 @@
+services:
+  app:
+    image: refashion-app-app # Add this line
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_FAL_KEY: ${NEXT_PUBLIC_FAL_KEY}
+        ENCRYPTION_SECRET: ${ENCRYPTION_SECRET}
+    ports:
+      - "3000:3000" # Map host port 3000 to container port 3000
+    volumes:
+      - ./public/uploads:/app/public/uploads # Persist uploads on the host machine
+      - ./user_data:/app/user_data 
+      # For development, you might want to mount your source code
+      # - .:/app 
+      # - /app/node_modules # Exclude node_modules from host mount
+      # - /app/.next # Exclude .next from host mount
+    env_file:
+      - .env # Load environment variables from .env file
+    environment:
+      - NODE_ENV=production # Or 'production' if you want to test production build behavior
+      - PORT=3000
+      - NEXT_PUBLIC_APP_URL=https://app.refashion.cc
+      - FORCE_HTTPS=false # Set to true if using HTTPS
+      # STORAGE_PROVIDER will be picked from .env file
+    # If you need to ensure Genkit dev server runs, you might need a more complex setup
+    # or run it separately. This setup focuses on running the Next.js app.

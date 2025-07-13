@@ -1,0 +1,31 @@
+# Ignored by default by most tools
+.DS_Store
+.env
+.env.*
+.idea/
+.vscode/
+npm-debug.log
+
+# User-generated content and build artifacts
+# These should NOT be in the image.
+node_modules
+.next/
+out/
+public/uploads/
+user_data/
+
+# Explicitly INCLUDE files and folders needed for the build.
+# This prevents them from being accidentally ignored.
+!/src
+!/public
+!/components.json
+!/next.config.ts
+!/package.json
+!/package-lock.json
+!/postcss.config.js
+!/postcss.config.mjs
+!/tailwind.config.ts
+!/tsconfig.json
+!/entrypoint.sh
+!/Dockerfile
+!/.dockerignore

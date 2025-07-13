@@ -1,0 +1,427 @@
+'use server';
+
+import * as videoService from '@/services/fal-api/video.service';
+import { fal } from '@fal-ai/client';
+import { getCurrentUser } from '@/actions/authActions';
+import { addStandaloneVideoHistoryItem, updateVideoHistoryItem } from '@/actions/historyActions';
+
+// Ensure FAL_KEY is available, otherwise Fal.ai calls will fail
+if (!process.env.FAL_KEY) {
+  console.warn(
+    'FAL_KEY environment variable is not set. Fal.ai API calls for video generation will likely fail.'
+  );
+}
+
+export interface GenerateVideoInput {
+  prompt: string;
+  image_url: string; // This can be a public URL or a base64 data URI
+  resolution?: '480p' | '720p';
+  duration?: '5' | '10'; // Duration as strings for Fal.ai API
+  camera_fixed?: boolean;
+  seed?: number; // Use -1 for random
+  // Add structured video parameters (for history/logging purposes, not sent to Fal.ai)
+  selectedPredefinedPrompt?: string;
+  modelMovement?: string;
+  fabricMotion?: string;
+  cameraAction?: string;
+  aestheticVibe?: string;
+}
+
+export interface GenerateVideoOutput {
+  videoUrl: string | null;
+  localVideoUrl: string | null;
+  seedUsed: number | null;
+  error?: string | null;
+}
+
+// New function to start video generation and return a task ID
+export async function startVideoGeneration(
+  input: GenerateVideoInput
+): Promise<{ taskId: string; error?: string }> {
+  console.log('Attempting to start video generation task with Fal.ai Seedance...', {
+    prompt: input.prompt ? `${input.prompt.substring(0, 50)}...` : 'No prompt',
+    hasImageUrl: !!input.image_url,
+    resolution: input.resolution,
+    duration: input.duration,
+    camera_fixed: input.camera_fixed,
+    seed: input.seed
+  });
+
+  if (!process.env.FAL_KEY) {
+    console.error('FAL_KEY environment variable is not set');
+    return { taskId: '', error: 'FAL_KEY environment variable is not set. Video generation service is unavailable.' };
+  }
+
+  // Log that FAL_KEY exists (without exposing the actual key)
+  console.log('FAL_KEY is configured:', process.env.FAL_KEY ? 'Yes' : 'No');
+
+  if (!input.prompt) return { taskId: '', error: 'Prompt is required.' };
+  if (!input.image_url) return { taskId: '', error: 'Image URL or data URI is required.' };
+
+  try {
+    console.log('Making request to fal.queue.submit...');
+    
+    // Start with minimal required parameters
+    const falInput: any = {
+      prompt: input.prompt,
+      image_url: input.image_url,
+    };
+    
+    // Only add optional parameters if they have values
+    if (input.resolution) {
+      falInput.resolution = input.resolution;
+    }
+    if (input.duration) {
+      falInput.duration = input.duration;
+    }
+    if (typeof input.camera_fixed === 'boolean') {
+      falInput.camera_fixed = input.camera_fixed;
+    }
+    if (typeof input.seed === 'number' && input.seed !== undefined) {
+      falInput.seed = input.seed;
+    }
+    
+    console.log('Fal.ai input parameters:', JSON.stringify(falInput, null, 2));
+    
+    // Using fal.queue.submit to get a request ID (taskId) for async processing
+    const { request_id } = await fal.queue.submit('fal-ai/bytedance/seedance/v1/lite/image-to-video', {
+      input: falInput,
+    });
+    console.log(`Fal.ai video generation task started successfully. Task ID: ${request_id}`);
+    return { taskId: request_id };
+  } catch (error: any) {
+    console.error('Error starting Fal.ai video generation task:', {
+      error: error,
+      message: error?.message,
+      name: error?.name,
+      stack: error?.stack,
+      cause: error?.cause
+    });
+    
+    // Try to get more specific error information
+    if (error?.body) {
+      console.error('Fal.ai error body:', JSON.stringify(error.body, null, 2));
+    }
+    
+    // Construct a more informative error message
+    let finalErrorMessage = 'Failed to start video generation task.';
+    if (error?.message) {
+      finalErrorMessage += ` Details: ${error.message}`;
+    }
+    if (error?.name) {
+      finalErrorMessage += ` (${error.name})`;
+    }
+    
+    return { taskId: '', error: finalErrorMessage };
+  }
+}
+
+
+/**
+ * Generates a video from an image and a prompt using Fal.ai's Seedance model.
+ * @param input The input parameters for video generation.
+ * @returns Promise<GenerateVideoOutput> An object containing the video URL, seed used, or an error.
+ */
+export async function generateVideoAction(
+  input: GenerateVideoInput
+): Promise<GenerateVideoOutput> {
+  console.log('Starting video generation process with Fal.ai Seedance...', input);
+  if (!process.env.FAL_KEY) {
+    return {
+      videoUrl: null,
+      localVideoUrl: null,
+      seedUsed: null,
+      error: 'FAL_KEY environment variable is not set. Video generation service is unavailable.',
+    };
+  }
+
+  if (!input.prompt) {
+    return { videoUrl: null, localVideoUrl: null, seedUsed: null, error: 'Prompt is required.' };
+  }
+  if (!input.image_url) {
+    return { videoUrl: null, localVideoUrl: null, seedUsed: null, error: 'Image URL or data URI is required.' };
+  }
+
+  interface FalSeedanceInput {
+    prompt: string;
+    image_url: string;
+    resolution?: '480p' | '720p';
+    duration?: '5' | '10';
+    camera_fixed?: boolean;
+    seed?: number;
+  }
+
+  const falInput: FalSeedanceInput = {
+    prompt: input.prompt,
+    image_url: input.image_url,
+  };
+
+  if (input.resolution) falInput.resolution = input.resolution;
+  if (input.duration) falInput.duration = input.duration;
+  if (typeof input.camera_fixed === 'boolean') falInput.camera_fixed = input.camera_fixed;
+  // Ensure seed is only added if it's a valid number (Fal might error on other types)
+  if (typeof input.seed === 'number' && !isNaN(input.seed)) falInput.seed = input.seed;
+
+
+  try {
+    // The actual result type from fal.subscribe can be complex if intermediate updates are handled.
+    // For the final result, it often matches the expected output schema of the model.
+    // Using `any` here for `result` if the exact type from `fal.subscribe` is not strictly known
+    // or if we only care about `result.data` matching Fal's output schema.
+    const result: any = await fal.subscribe(
+      'fal-ai/bytedance/seedance/v1/lite/image-to-video',
+      {
+        input: falInput,
+        logs: process.env.NODE_ENV === 'development', // Enable logs in development
+        onQueueUpdate: (update) => {
+          if (update.status === 'IN_PROGRESS' && update.logs) {
+            update.logs.forEach((log) =>
+              console.log(`[Fal.ai Video Gen Progress]: ${log.message}`)
+            );
+          }
+        },
+      }
+    );    if (result && result.data && result.data.video && result.data.video.url) {
+      console.log('Fal.ai video generation completed successfully.');
+      
+      // Store the video locally with consistent naming
+      let localVideoUrl = null;
+      try {
+        localVideoUrl = await storeGeneratedVideo(result.data.video.url, 'RefashionAI_video');
+        console.log('Video stored locally successfully.');
+      } catch (storageError) {
+        console.error('Failed to store video locally, but keeping Fal.ai URL:', storageError);
+        // Continue with just the Fal.ai URL if local storage fails
+      }
+
+      return {
+        videoUrl: result.data.video.url,
+        localVideoUrl: localVideoUrl,
+        seedUsed: result.data.seed,
+        error: null,
+      };
+    } else {
+      console.error(
+        'Fal.ai video generation response did not contain the expected video URL.',
+        result
+      );
+      return {
+        videoUrl: null,
+        localVideoUrl: null,
+        seedUsed: result?.data?.seed, // Seed might still be present on partial success/failure
+        error: 'Fal.ai video generation failed to return a valid video URL. Check logs for details.',
+      };
+    }
+  } catch (error: any) {
+    console.error('Error during Fal.ai video generation call:', error);
+    let finalErrorMessage = 'An unexpected error occurred during video generation.';
+
+    if (error.response) {
+      // Error from HTTP response (e.g., Fal API error)
+      const statusCode = error.response.status;
+      const responseData = error.response.data;
+      let apiErrorDetail = 'No specific detail from API.';
+
+      if (responseData && responseData.detail) {
+        apiErrorDetail = responseData.detail;
+      } else if (responseData && typeof responseData === 'string') {
+        apiErrorDetail = responseData;
+      } else if (error.message) {
+        apiErrorDetail = error.message;
+      }
+
+      finalErrorMessage = `Fal.ai API Error (Status ${statusCode}): ${apiErrorDetail}`;
+
+      // Specific messages based on status code for clarity
+      if (statusCode === 400) finalErrorMessage = `Fal.ai Error: Bad Request. ${apiErrorDetail}. Please check your input parameters.`;
+      else if (statusCode === 401) finalErrorMessage = `Fal.ai Error: Authentication failed. ${apiErrorDetail}. Please verify your API key (FAL_KEY).`;
+      else if (statusCode === 422) finalErrorMessage = `Fal.ai Error: Unprocessable Entity / Invalid Parameters. ${apiErrorDetail}. Please check your input values.`;
+      else if (statusCode === 429) finalErrorMessage = `Fal.ai Error: Rate limit exceeded. ${apiErrorDetail}. Please try again later.`;
+      else if (statusCode === 500) finalErrorMessage = `Fal.ai Error: Internal Server Error on Fal.ai side. ${apiErrorDetail}. Please try again later.`;
+      else if (statusCode === 503) finalErrorMessage = `Fal.ai Error: Service Unavailable. ${apiErrorDetail}. Fal.ai may be temporarily down.`;
+
+    } else if (error.errors && Array.isArray(error.errors) && error.errors.length > 0 && error.errors[0].message) {
+      // Fal client-side validation errors (e.g., input schema mismatch before sending)
+      finalErrorMessage = `Fal.ai Client Validation Error: ${error.errors[0].message}`;
+    } else if (error.request) {
+      // The request was made but no response was received
+      finalErrorMessage = 'Fal.ai Error: No response received from server. Check network connectivity or Fal.ai status.';
+       if (error.message && error.message.toLowerCase().includes('timeout')) {
+        finalErrorMessage = 'Fal.ai Error: Request timed out. The operation took too long to complete.';
+      }
+    } else if (error.message) {
+      // Other errors (e.g., setup issues, network problems before request)
+      finalErrorMessage = error.message;
+    }
+
+    // Ensure the error message always indicates it's a video generation failure
+    if (!finalErrorMessage.toLowerCase().startsWith('video generation failed:')) {
+        finalErrorMessage = `Video generation failed: ${finalErrorMessage}`;
+    }
+    return {
+      videoUrl: null,
+      localVideoUrl: null,
+      seedUsed: null,
+      error: finalErrorMessage,
+    };
+  }
+}
+
+/**
+ * Stores a generated video locally by downloading it from the Fal.ai URL
+ * @param videoUrl The temporary Fal.ai video URL
+ * @param fileNamePrefix The prefix for the video file name
+ * @returns Promise<string> The local URL path of the stored video
+ */
+async function storeGeneratedVideo(videoUrl: string, fileNamePrefix: string): Promise<string> {
+  console.log('Downloading and storing video locally from Fal.ai URL...');
+  
+  try {
+    // Create video storage directory
+    const videoDir = path.join(process.cwd(), 'public', 'uploads', 'generated_videos');
+    await fs.mkdir(videoDir, { recursive: true });
+
+    // Generate unique filename with consistent naming
+    const uniqueFileName = `${fileNamePrefix}_${uuidv4()}.mp4`;
+    const filePath = path.join(videoDir, uniqueFileName);
+
+    // Download video from Fal.ai URL
+    const response = await fetch(videoUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download video: ${response.status} ${response.statusText}`);
+    }
+
+    // Get video buffer and save to file
+    const videoBuffer = await response.arrayBuffer();
+    await fs.writeFile(filePath, Buffer.from(videoBuffer));
+
+    // Set file permissions if needed (for Docker environments)
+    try {
+      await fs.chmod(filePath, 0o777);
+      console.log(`Set file permissions to 777 for: ${filePath}`);
+    } catch (chmodError) {
+      console.warn(`Warning: Could not set file permissions for ${filePath}:`, chmodError);
+    }
+
+    // Set ownership if running in Docker with PUID/PGID
+    const puid = process.env.PUID;
+    const pgid = process.env.PGID;
+    if (puid && pgid) {
+      try {
+        await fs.chown(filePath, parseInt(puid), parseInt(pgid));
+        console.log(`Set file ownership to ${puid}:${pgid} for: ${filePath}`);
+      } catch (chownError) {
+        console.warn(`Warning: Could not set file ownership for ${filePath}:`, chownError);
+      }
+    }
+
+    const relativeUrl = `/uploads/generated_videos/${uniqueFileName}`;
+    console.log(`Video saved locally to: ${filePath}, accessible at: ${relativeUrl}`);
+    return relativeUrl;
+
+  } catch (error) {
+    console.error('Error storing video locally:', error);
+    throw new Error(`Failed to store video locally: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Checks if the Fal.ai video generation service is configured and available.
+ * @returns {Promise<boolean>} True if the service is available, otherwise false.
+ */
+export async function isFalVideoGenerationAvailable(): Promise<boolean> {
+  return !!process.env.FAL_KEY;
+}
+
+/**
+ * Utility to upload a file (from Blob or File object) to Fal Storage.
+ * This is useful if the input image_url for generateVideoAction needs to be a Fal storage URL.
+ * @param file The file object (e.g., from an <input type="file"> or a fetched Blob)
+ * @returns Promise<string> The public URL of the uploaded file in Fal Storage.
+ */
+export async function uploadToFalStorage(file: File | Blob): Promise<string> {
+  if (!process.env.FAL_KEY) {
+    throw new Error('FAL_KEY environment variable is not set. Cannot upload to Fal Storage.');
+  }
+  try {
+    const url = await fal.storage.upload(file);
+    console.log(`File uploaded to Fal Storage: ${url}`);
+    return url;
+  } catch (error: any) {
+    console.error('Error uploading file to Fal Storage:', error);
+    throw new Error(`Failed to upload to Fal Storage: ${error.message}`);
+  }
+}
+
+// New function to start video generation with webhook support
+export async function startVideoGenerationAndCreateHistory(input: GenerateVideoInput) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { error: 'User not authenticated' };
+  }
+
+  // 1. Create a placeholder history item first to get an ID
+  const historyVideoParams = {
+    prompt: input.prompt,
+    resolution: input.resolution || '720p',
+    duration: input.duration || '5',
+    seed: input.seed || -1,
+    sourceImageUrl: input.image_url,
+    selectedPredefinedPrompt: input.selectedPredefinedPrompt || 'custom',
+    modelMovement: input.modelMovement || '',
+    fabricMotion: input.fabricMotion || '',
+    cameraAction: input.cameraAction || '',
+    aestheticVibe: input.aestheticVibe || '',
+    cameraFixed: input.camera_fixed || false,
+    status: 'processing' as const, // Initial status
+  };
+
+  // Create placeholder history item and get the ID
+  const historyItemId = await addStandaloneVideoHistoryItem(
+    [null], // No video URL yet
+    historyVideoParams
+  );
+
+  // 2. Prepare the webhook URL for fal_webhook query parameter
+  const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/video/webhook?historyItemId=${historyItemId}&username=${encodeURIComponent(user.username)}`;
+
+  // 3. Submit the job using the new service function
+  try {
+    const videoServiceInput = {
+      prompt: input.prompt,
+      image_url: input.image_url,
+      resolution: input.resolution,
+      duration: input.duration,
+      camera_fixed: input.camera_fixed,
+      seed: input.seed,
+    };
+
+    const taskId = await videoService.startVideoGenerationWithWebhook(videoServiceInput, webhookUrl);
+
+    // Update the history item with the taskId for tracking
+    await updateVideoHistoryItem({ 
+      username: user.username, 
+      historyItemId, 
+      videoUrls: [null],
+      localVideoUrl: null,
+      seedUsed: null,
+      status: 'processing',
+    });
+
+    return { taskId, historyItemId };
+  } catch (error: any) {
+    console.error('Fal.ai submission error:', error);
+    
+    // If submission fails, mark the history item as failed
+    await updateVideoHistoryItem({ 
+      username: user.username, 
+      historyItemId, 
+      videoUrls: [null],
+      localVideoUrl: null,
+      seedUsed: null,
+      status: 'failed', 
+      error: 'Failed to submit job to fal.ai' 
+    });
+    return { error: 'Failed to submit video generation job.' };
+  }
+}

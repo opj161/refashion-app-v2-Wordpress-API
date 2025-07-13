@@ -1,0 +1,21 @@
+services:
+  refashion-app:
+    image: jay2323/refashion:latest
+    container_name: refashion-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"    
+    volumes:
+      - /mnt/user/appdata/refashion-app/uploads:/app/public/uploads
+    environment:
+      # Override only deployment-specific variables
+      - NODE_ENV=production
+      - HOST=192.168.1.9
+      - PORT=3000
+      
+    networks:
+      - marxnet
+
+networks:
+  marxnet:
+    driver: bridge

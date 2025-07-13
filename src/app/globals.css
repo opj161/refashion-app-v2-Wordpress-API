@@ -1,0 +1,197 @@
+/* globals.css - Alternative 1: Deep Ocean Elegance */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Motion constants for optimized animations */
+:root {
+  --motion-spring-quick: 450ms linear(0, 0.2348, 0.6075, 0.8763, 1.0076, 1.0451, 1.0389, 1.0217, 1.0079, 1.0006, 0.9981, 0.9981, 0.9988, 0.9995, 1);
+  --motion-spring-standard: 900ms linear(0, 0.0697, 0.2323, 0.4311, 0.6265, 0.7946, 0.9243, 1.0138, 1.0669, 1.0909, 1.094, 1.0837, 1.0666, 1.0476, 1.0297, 1.0149, 1.0039, 0.9967, 0.9926, 0.9911, 0.9913, 0.9926, 0.9943, 0.9961, 0.9977, 0.999, 0.9999, 1.0005, 1, 1);
+  --motion-bounce-subtle: 0.6s linear(0, 0.0022, 0.0087, 0.0196, 0.0348, 0.0543, 0.0782, 0.1065, 0.139, 0.176, 0.2173, 0.2629, 0.3128, 0.3672, 0.4258, 0.4888, 0.5562, 0.6279, 0.7039, 0.7843, 0.869, 0.9581, 0.9752, 0.9332, 0.8954, 0.8621, 0.833, 0.8083, 0.788, 0.772, 0.7603, 0.753, 0.7501, 0.7515, 0.7572, 0.7673, 0.7817, 0.8004, 0.8235, 0.851, 0.8828, 0.9189, 0.9594, 0.9979, 0.9772, 0.9608, 0.9487, 0.941, 0.9377, 0.9386, 0.944, 0.9537, 0.9677, 0.986, 0.996, 0.9881, 0.9846, 0.9854, 0.9905, 1);
+  --motion-duration-fast: 100ms;
+  --motion-duration-quick: 200ms;
+  --motion-duration-standard: 300ms;
+  --motion-duration-slow: 500ms;
+  --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-anticipate: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+}
+
+@layer base {
+  /* Remove existing :root and .dark color definitions and replace with these */
+  :root {
+    /* Light Theme (if you ever need it, but we'll focus on dark) */
+    --background: 210 20% 98%;
+    --background-accent: 210 20% 94%;
+    --foreground: 210 10% 23%;
+    --card: 210 20% 100%;
+    --card-foreground: 210 10% 23%;
+    --popover: 210 20% 100%;
+    --popover-foreground: 210 10% 23%;
+    --primary: 173 71% 38%; /* Darker Teal for contrast on light BG */
+    --primary-foreground: 173 50% 98%;
+    --secondary: 210 15% 90%;
+    --secondary-foreground: 210 10% 23%;
+    --muted: 210 15% 94%;
+    --muted-foreground: 210 10% 45%;
+    --accent: 177 63% 48%;
+    --accent-foreground: 210 10% 23%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 210 10% 88%;
+    --input: 210 10% 92%;
+    --ring: 173 71% 42%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Main Dark Theme */
+    --background: 224 71% 4%;          /* hsl(224, 71%, 4%) - Almost black, deep blue */
+    --background-accent: 224 40% 8%;   /* hsl(224, 40%, 8%) - Slightly lighter, for depth */
+    --foreground: 210 20% 92%;         /* hsl(210, 20%, 92%) - Off-white with a cool tint */
+    
+    --card: 224 25% 12%;               /* hsl(224, 25%, 12%) - Dark blue-gray */
+    --card-foreground: 210 20% 95%;    /* hsl(210, 20%, 95%) */
+
+    --popover: 224 71% 4%;
+    --popover-foreground: 210 20% 95%;
+
+    --primary: 173 71% 42%;            /* #1fab99 */
+    --primary-foreground: 224 20% 98%; /* Very light, almost white */
+
+    --secondary: 210 15% 23%;          /* hsl(210, 15%, 23%) - Muted dark blue */
+    --secondary-foreground: 210 20% 92%;
+
+    --muted: 210 15% 18%;
+    --muted-foreground: 210 10% 65%;
+
+    --accent: 177 63% 48%;             /* #2abab1 */
+    --accent-foreground: 224 20% 98%;
+
+    --destructive: 19 87% 51%;         /* #ef571a */
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 210 10% 23%;             /* A slightly lighter blue-gray */
+    --input: 210 15% 18%;
+    --ring: 177 63% 55%;               /* Lighter teal for focus rings */
+    --radius: 0.75rem;
+  }
+
+  @keyframes aurora-animation {
+    0% { transform: translate(-50%, -50%) rotate(0deg) scale(1.2); }
+    50% { transform: translate(-50%, -50%) rotate(180deg) scale(1.5); }
+    100% { transform: translate(-50%, -50%) rotate(360deg) scale(1.2); }
+  }
+
+  .aurora-bg {
+    content: '';
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: 120vw;
+    height: 120vh;
+    max-width: 1400px;
+    max-height: 1400px;
+    background-image: radial-gradient(circle at 20% 20%, hsl(173 71% 42% / 0.2), transparent 40%),
+                      radial-gradient(circle at 80% 30%, hsl(278 48% 28% / 0.2), transparent 40%),
+                      radial-gradient(circle at 60% 80%, hsl(244 62% 30% / 0.2), transparent 40%);
+    filter: blur(100px);
+    z-index: -1;
+    pointer-events: none;
+    animation: aurora-animation 45s linear infinite;
+    opacity: 0.7;
+  }
+
+  /* --- Improvement 1: Aurora Background Glow --- */
+  .dark body::before {
+    content: '';
+    position: fixed;
+    left: 50%;
+    top: 15%;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, hsl(var(--primary) / 0.1), transparent 65%);
+    transform: translateX(-50%);
+    filter: blur(120px);
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.7;
+  }
+
+  /* --- Improvement 2: Enhanced Card Styling --- */
+  .dark .card {
+    position: relative;
+    background-clip: padding-box;
+    border: 1px solid transparent;
+  }
+  .dark .card::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    z-index: -1;
+    margin: -1px;
+    border-radius: inherit;
+    background: linear-gradient(145deg, hsl(var(--primary) / 0.3), hsl(var(--border) / 0.1) 80%);
+  }
+
+  /* Ensure theme transitions are smooth when hydrated */
+  html.light,
+  html.dark {
+    transition: none;
+  }
+
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  }
+
+  /* --- Improvement 4: Softer Focus Rings --- */
+  .dark input:focus-visible, 
+  .dark textarea:focus-visible, 
+  .dark [data-radix-select-trigger]:focus-visible {
+    border-color: hsl(var(--primary) / 0.8) !important;
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2) !important;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply border border-white/10 bg-card/50 backdrop-blur-xl shadow-2xl shadow-black/20;
+    @apply transition-all duration-300;
+  }
+  .glass-card:hover {
+    @apply border-white/20 bg-card/60;
+  }
+  .uploader-dropzone {
+    @apply border border-white/10; /* Default border */
+    position: relative;
+    overflow: hidden;
+  }
+
+  .uploader-dropzone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px; /* border thickness */
+    background: radial-gradient(400px circle at 50% 50%, hsl(var(--primary) / 0.5), transparent 40%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+  }
+  
+  .uploader-dropzone[data-state='drag-over']::before {
+    opacity: 1;
+  }
+}

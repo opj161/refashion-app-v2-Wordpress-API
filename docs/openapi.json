@@ -1,0 +1,5032 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "visionatrix",
+    "version": "2.5.0.dev0"
+  },
+  "paths": {
+    "/comfy/": {
+      "get": {
+        "summary": "Custom Index",
+        "description": "Original ComfyUI user interface",
+        "operationId": "custom_index",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/flows/installed": {
+      "get": {
+        "tags": [
+          "flows"
+        ],
+        "summary": "Get Installed",
+        "description": "Return the list of installed flows. Each flow can potentially be converted into a task. The response\nincludes details such as the name, display name, description, author, homepage URL, and other relevant\ninformation about each flow.",
+        "operationId": "get_installed",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Flow"
+                  },
+                  "type": "array",
+                  "title": "Response Get Installed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/flows/not-installed": {
+      "get": {
+        "tags": [
+          "flows"
+        ],
+        "summary": "Get Not Installed",
+        "description": "Return the list of flows that can be installed. This endpoint provides detailed information about each flow,\nsimilar to the installed flows, which includes metadata and configuration parameters.",
+        "operationId": "get_not_installed",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Flow"
+                  },
+                  "type": "array",
+                  "title": "Response Get Not Installed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/flows/subflows": {
+      "get": {
+        "tags": [
+          "flows"
+        ],
+        "summary": "Get Subflows",
+        "description": "Retrieves a list of flows designed to post-process the results from other flows, filtering by the type\nof input they handle, either 'image', 'image-inpaint' or 'video'. This endpoint is particularly useful for chaining\nworkflows where the output of one flow becomes the input to another.\nIt modifies the main flow's structure by adopting sub-flow's display name and selectively merging input parameters\nfrom the sub-flows into the main flow's parameters based on matching names.",
+        "operationId": "get_subflows",
+        "parameters": [
+          {
+            "name": "input_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "image",
+                "image-inpaint",
+                "video"
+              ],
+              "type": "string",
+              "title": "Input Type"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Flow"
+                  },
+                  "title": "Response Get Subflows"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/flows/flow-details": {
+      "get": {
+        "tags": [
+          "flows"
+        ],
+        "summary": "Get Flow Details",
+        "description": "Retrieves the Flow model and its associated flow_comfy dictionary.\nThis endpoint is restricted to admin users.",
+        "operationId": "get_flow_details",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Name of the flow to retrieve details for.",
+              "title": "Name"
+            },
+            "description": "Name of the flow to retrieve details for."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/flows/flow": {
+      "post": {
+        "tags": [
+          "flows"
+        ],
+        "summary": "Install",
+        "description": "Initiates the installation of a flow based on its name. Requires admin privileges.\n\nIf the specified flow is already being installed, a `409 Conflict` status is returned. However,\nthe installation of other flows is allowed concurrently.",
+        "operationId": "install",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Name of the flow you wish to install",
+              "title": "Name"
+            },
+            "description": "Name of the flow you wish to install"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful start of installation"
+          },
+          "404": {
+            "description": "Flow not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Can't find `flow_name` flow."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Installation of the same flow is already in progress",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Installation of this flow is already in progress."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "flows"
+        ],
+        "summary": "Install From File",
+        "description": "Initiates the installation of a flow from an uploaded file. Requires admin privileges.\n\nIf the specified flow is already being installed, a `409 Conflict` status is returned. However,\nthe installation of other flows is allowed concurrently.",
+        "operationId": "install_from_file",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_install_from_file"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful start of installation"
+          },
+          "409": {
+            "description": "Installation of the same flow is already in progress",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Installation of this flow is already in progress."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "flows"
+        ],
+        "summary": "Delete",
+        "description": "Endpoint to delete an installed flow by its name. Requires administrative privileges to execute.\nThis endpoint will succeed even if the flow does not exist.",
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Name of the flow you wish to delete",
+              "title": "Name"
+            },
+            "description": "Name of the flow you wish to delete"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Flow deleted successfully"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/flows/flow-update": {
+      "post": {
+        "tags": [
+          "flows"
+        ],
+        "summary": "Flow Update",
+        "description": "Initiates the update process for an installed flow. Requires admin privileges.\n\nIf the specified flow is already being installed or updated, a `409 Conflict` status is returned.\nHowever, updates or installations of other flows are allowed concurrently.",
+        "operationId": "flow_update",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Name of the flow you wish to update",
+              "title": "Name"
+            },
+            "description": "Name of the flow you wish to update"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful start of update process"
+          },
+          "404": {
+            "description": "Flow not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Can't find `flow_name` flow."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Update or installation of the same flow is already in progress",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Installation of this flow is already in progress."
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Flow does not have a newer version",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Flow `flow_name` does not have a newer version."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/flows/install-progress": {
+      "get": {
+        "tags": [
+          "flows"
+        ],
+        "summary": "Get Install Progress",
+        "description": "Retrieves the current installation progress of all flows.\n\nRequires administrative privileges.",
+        "operationId": "get_install_progress",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FlowProgressInstall"
+                  },
+                  "title": "Response Get Install Progress"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "flows"
+        ],
+        "summary": "Delete Install Progress",
+        "description": "Deletes the installation progress entry for a specified flow.\n\nRequires administrative privileges.",
+        "operationId": "delete_install_progress",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Name of the flow progress you wish to delete",
+              "title": "Name"
+            },
+            "description": "Name of the flow progress you wish to delete"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Flow progress installation entry deleted successfully"
+          },
+          "404": {
+            "description": "Flow progress installation entry not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Can't find `flow_name`."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/flows/clone-flow": {
+      "post": {
+        "tags": [
+          "flows"
+        ],
+        "summary": "Clone Flow",
+        "description": "Clones an existing flow with updated metadata or LoRA connection points.\nRequires admin privileges.",
+        "operationId": "clone_flow",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlowCloneRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Flow cloned successfully."
+          },
+          "404": {
+            "description": "Original flow not found."
+          },
+          "400": {
+            "description": "Error occurred while cloning the flow."
+          },
+          "409": {
+            "description": "Installation of the same flow is already in progress",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Installation of this flow is already in progress."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/flows/flow-metadata": {
+      "put": {
+        "tags": [
+          "flows"
+        ],
+        "summary": "Edit Flow Metadata",
+        "operationId": "edit_flow_metadata",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Name of the flow to update metadata for.",
+              "title": "Name"
+            },
+            "description": "Name of the flow to update metadata for."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlowMetadataUpdate",
+                "description": "New metadata values for the flow."
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Flow metadata updated successfully."
+          },
+          "400": {
+            "description": "Invalid metadata provided",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Flow metadata node not found."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error during editing the flow",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Editing flow failed."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/models/orphan": {
+      "get": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Get Orphan Models",
+        "description": "Retrieves a list of orphaned AI model files not associated with any installed flow.\n\nOrphaned models are files found in ComfyUI's model directories that are not required\nby installed flows. This endpoint provides metadata for each orphaned model,\nincluding file path, size, and potential usage in flows.\n\nAccess to this endpoint is restricted to administrators.",
+        "operationId": "get_orphan_models",
+        "responses": {
+          "200": {
+            "description": "List of orphaned models retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrphanModel"
+                  },
+                  "title": "Response Get Orphan Models"
+                },
+                "example": [
+                  {
+                    "path": "models/example_model.ckpt",
+                    "full_path": "/absolute/path/to/models/example_model.ckpt",
+                    "size": 512.3,
+                    "creation_time": 1695724800.0,
+                    "possible_flows": []
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "description": "Ongoing installation prevents orphan model detection.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Cannot run orphan models detection during ongoing installations."
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Delete Orphan Model",
+        "description": "Deletes a specified orphaned model file.\n\nThis endpoint removes an orphaned model if:\n- There are no ongoing model or flow installations.\n- The specified `full_path` and `file_creation_time` correspond to an orphaned model.\n\nAccess to this endpoint is restricted to administrators.",
+        "operationId": "delete_orphan_model",
+        "parameters": [
+          {
+            "name": "full_orphan_path",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Full Orphan Path"
+            }
+          },
+          {
+            "name": "file_creation_time",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "title": "File Creation Time"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Orphaned model successfully deleted."
+          },
+          "400": {
+            "description": "Invalid input or ongoing installations prevent deletion.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Cannot delete orphan models during ongoing installations."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found at the specified path.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "File not found at path: /absolute/path/to/models/example_model.ckpt"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error during deletion.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Failed to delete orphan model: Unknown error occurred."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/other/interrupt-engine": {
+      "post": {
+        "tags": [
+          "other"
+        ],
+        "summary": "Interrupt Engine",
+        "description": "Interrupts the currently executing task. This is primarily an internal function and should be used\ncautiously. For standard task management, prefer using the `task_queue_clear` or `tasks_queue_clear`\nendpoints. Requires administrative privileges to execute.",
+        "operationId": "interrupt_engine",
+        "responses": {
+          "204": {
+            "description": "Engine interrupt initiated successfully"
+          },
+          "401": {
+            "description": "Unauthorized - Admin privilege required",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Admin privilege required"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/other/shutdown-server": {
+      "post": {
+        "tags": [
+          "other"
+        ],
+        "summary": "Shutdown Server",
+        "description": "Shuts down the current instance of Vix. This endpoint queues a task to terminate the server process\nafter a short delay, ensuring any final operations can complete. Access is restricted to administrators only.",
+        "operationId": "shutdown_server",
+        "responses": {
+          "204": {
+            "description": "Server shutdown initiated successfully"
+          },
+          "401": {
+            "description": "Unauthorized - Admin privilege required",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Admin privilege required"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/other/whoami": {
+      "get": {
+        "tags": [
+          "other"
+        ],
+        "summary": "Whoami",
+        "description": "Returns information about the currently authenticated user.",
+        "operationId": "whoami",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/other/translate-prompt": {
+      "post": {
+        "tags": [
+          "other"
+        ],
+        "summary": "Translate Prompt",
+        "description": "Translates an image generation prompt from another language into English.\n\nThis endpoint accepts a prompt in any language and translates it into English.\nIt returns the original prompt, the translated result, and the reason the generation was completed.\n\nAccessible to all authenticated users.\n\nRaises:\n    HTTPException: If there is an error during the translation process.",
+        "operationId": "translate_prompt",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranslatePromptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Translation successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslatePromptResponse"
+                },
+                "example": {
+                  "prompt": "Dornr\u00f6schen",
+                  "result": "Sleeping Beauty",
+                  "done_reason": "stop"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Translation service error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Translation service error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/other/update-status": {
+      "get": {
+        "tags": [
+          "other",
+          "other"
+        ],
+        "summary": "Update Status",
+        "description": "Access is restricted to administrators only.",
+        "operationId": "update_status",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisionatrixUpdateStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/settings/get": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Get",
+        "description": "Returns the value as a string or an empty string if the setting is not found.\n\nDefault endpoint for retrieving settings.\nUser settings have higher priority than global settings.",
+        "operationId": "get",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The key of the setting to retrieve",
+              "title": "Key"
+            },
+            "description": "The key of the setting to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved setting",
+            "content": {
+              "text/plain": {
+                "example": "value_of_setting"
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/settings/global": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Get Global",
+        "description": "Retrieve the global setting value or an empty string if the global setting is not found.",
+        "operationId": "get_global",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The key of the global setting to retrieve",
+              "title": "Key"
+            },
+            "description": "The key of the global setting to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved global setting",
+            "content": {
+              "text/plain": {
+                "example": "value_of_global_setting"
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Set Global",
+        "description": "Creates, updates, or deletes a global setting.\n\nTo delete a setting, specify an empty string as the value.\nAccess is restricted to administrators only.",
+        "operationId": "set_global",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_set_global"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Global setting updated successfully"
+          },
+          "401": {
+            "description": "Unauthorized - Admin privilege required",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Admin privilege required"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/settings/user": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Get User",
+        "description": "Retrieve the user setting value or an empty string if the user setting is not found.",
+        "operationId": "get_user",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The key of the user setting to retrieve",
+              "title": "Key"
+            },
+            "description": "The key of the user setting to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved user setting",
+            "content": {
+              "text/plain": {
+                "example": "value_of_user_setting"
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Set User",
+        "description": "Creates, updates, or deletes a user setting.\n\nTo delete a setting, specify an empty string as the value.",
+        "operationId": "set_user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_set_user"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "User setting updated successfully"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/settings/get_all": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Get All",
+        "description": "Returns all settings for the user.\nUser settings have higher priority than global settings.",
+        "operationId": "get_all",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved all settings for the user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Get All"
+                },
+                "example": {
+                  "setting_key": "value"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/settings/global_all": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Get Global All",
+        "description": "Retrieve all global settings or an empty dictionary if none are found.",
+        "operationId": "get_global_all",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved all global settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Get Global All"
+                },
+                "example": {
+                  "global_setting_key": "value"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/settings/user_all": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Get User All",
+        "description": "Retrieve all user settings or an empty dictionary if none are found.",
+        "operationId": "get_user_all",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved all user settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Get User All"
+                },
+                "example": {
+                  "user_setting_key": "value"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/settings/ollama/models": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Get Ollama Models",
+        "description": "Fetches a list of models from the configured Ollama server (filename, size, modified).\nRequires admin privileges.",
+        "operationId": "get_ollama_models",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved list of models installed in Ollama",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OllamaModelItem"
+                  },
+                  "type": "array",
+                  "title": "Response Get Ollama Models"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Admin privilege required",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Admin privilege required"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invalid Ollama URL configured or error fetching models",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid Ollama URL configured or error fetching models."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/settings/comfyui/folders": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Comfyui Get Folders Paths",
+        "description": "Retrieves all folder paths and their metadata from the ComfyUI folder settings.\n\nRequires administrative privileges.",
+        "operationId": "comfyui_get_folders_paths",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComfyUIFolderPaths"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/tasks/create/{name}": {
+      "put": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Create Task",
+        "description": "Endpoint to initiate the creation and execution of tasks from the flows.\n\n**Path Parameter:**\n\n- `name`: Name of the flow from which the task should be created\n\n**Reserved Form Fields:**\n\n- `group_scope`: Group number to which task should be assigned. Maximum value is 255\n- `priority`: Task execution priority. Higher numbers indicate higher priority. Maximum value is 15\n- `child_task`: Int boolean indicating whether to create a relation between tasks\n- `webhook_url`: Optional. URL to call when task state changes\n- `webhook_headers`: Optional. Headers for webhook URL as encoded JSON string. Used only when `webhook_url` is set\n- `count`: Number of tasks to be created\n- `translate`: Should the prompt be translated if auto-translation option is enabled\n\n**Dynamic Task Parameters:**\n\nAll other form fields will be considered as **dynamic task-specific input parameters**.\nThese parameters vary depending on the flow specified by `name` and can be either text parameters or input files.\n\n**Custom Headers (Admin Only):**\n\n- `X-WORKER-UNLOAD-MODELS`: If `1`, unloads all models from memory before task execution.\n- `X-WORKER-EXECUTION-PROFILER`: If `1`, enables detailed profiling of task execution.\n- `X-WORKER-ID`: Forces the tasks to be assigned to a specific worker.\n- `X-FEDERATED-TASK`: If `1`, requires X-WORKER-ID`, rejects the task if the worker is busy, mark task as hidden.\n\n**Response:**\n\n- Returns a `TaskRunResults` object containing the list of task IDs and the outputs for the created tasks.\n\n**Notes:**\n\n- The request must use `multipart/form-data` as the content type.\n- Dynamic parameters should correspond to the inputs expected by the specified flow.\n- If a parameter is expected to be a file, include it as a file upload in the form data.\n- If a parameter is expected to be text, include it as a regular form field.\n- The endpoint accepts both text and file inputs as dynamic parameters.",
+        "operationId": "create_task",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name of the flow from which the task should be created"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskCreationWithFullParams"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskRunResults"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/tasks/progress": {
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Get Tasks Progress",
+        "description": "Retrieves the full tasks details information for a specific user.\nOptionally filter tasks by their name or a group number.",
+        "operationId": "get_tasks_progress",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Optional name to filter tasks by their name",
+              "title": "Name"
+            },
+            "description": "Optional name to filter tasks by their name"
+          },
+          {
+            "name": "group_scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Optional parameter to filter tasks by their group number",
+              "default": 1,
+              "title": "Group Scope"
+            },
+            "description": "Optional parameter to filter tasks by their group number"
+          },
+          {
+            "name": "only_parent",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Fetch only parent tasks",
+              "default": false,
+              "title": "Only Parent"
+            },
+            "description": "Fetch only parent tasks"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/TaskDetails"
+                  },
+                  "title": "Response Get Tasks Progress"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Update Task Progress",
+        "description": "Updates the progress of a specific task identified by `task_id`. This endpoint checks if the task exists\nand if the requester is authorized to update its progress. If the task is not found or unauthorized,\na 404 HTTP error is raised, and `worker` should stop and consider the task canceled.",
+        "operationId": "update_task_progress",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_update_task_progress"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Task progress updated successfully"
+          },
+          "400": {
+            "description": "Failed to update task progress",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Failed to update task progress."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found or not authorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Task `{task_id}` was not found."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/tasks/progress-summary": {
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Get Tasks Progress Summary",
+        "description": "Retrieves summary of the tasks progress details for a specific user.\nOptionally filter tasks by their name or a group number.",
+        "operationId": "get_tasks_progress_summary",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Optional name to filter tasks by their name",
+              "title": "Name"
+            },
+            "description": "Optional name to filter tasks by their name"
+          },
+          {
+            "name": "group_scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Optional parameter to filter tasks by their group number",
+              "default": 1,
+              "title": "Group Scope"
+            },
+            "description": "Optional parameter to filter tasks by their group number"
+          },
+          {
+            "name": "only_parent",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Fetch only parent tasks",
+              "default": false,
+              "title": "Only Parent"
+            },
+            "description": "Fetch only parent tasks"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/TaskDetailsShort"
+                  },
+                  "title": "Response Get Tasks Progress Summary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/tasks/progress/{task_id}": {
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Get Task Progress",
+        "description": "Retrieves the full task details of a specified task by task ID.\nAccess is restricted to the task owner or an administrator.",
+        "operationId": "get_task_progress",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/tasks/restart": {
+      "post": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Restart Task",
+        "description": "Restarts a task specified by `task_id` if it has encountered an error or is not yet completed.\nOnly tasks that have errors can be restarted unless `force` is set to `True`,\nwhich allows restarting any non-completed tasks.\nThis endpoint checks the task's current status and resets its progress, allowing it to be re-executed.\nAccess to this action is restricted to the task's owner or an administrator.",
+        "operationId": "restart_task",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "ID of the task to restart",
+              "title": "Task Id"
+            },
+            "description": "ID of the task to restart"
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Force restart even if the task has no error",
+              "default": false,
+              "title": "Force"
+            },
+            "description": "Force restart even if the task has no error"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successfully restarted the specified task"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Task already finished": {
+                    "summary": "Task already finished",
+                    "value": {
+                      "detail": "Task `{task_id}` already finished."
+                    }
+                  },
+                  "No error set": {
+                    "summary": "No error set",
+                    "value": {
+                      "detail": "Task `{task_id}` has no error set."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Task `{task_id}` was not found."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/tasks/task": {
+      "delete": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Delete Task",
+        "description": "Removes a task from the system by the task ID.\nAccess is limited to the task owner or administrators.\nAlso removes any child tasks associated with the specified task.",
+        "operationId": "delete_task",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "ID of the task to remove",
+              "title": "Task Id"
+            },
+            "description": "ID of the task to remove"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successfully removed the specified task and its child tasks"
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Task `{task_id}` was not found."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/tasks/clear": {
+      "delete": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Clear Tasks",
+        "description": "Removes all finished parent tasks associated with a specific task name,\nscoped to the requesting user and group scope.\nAll child tasks associated with the parent tasks will also be deleted.",
+        "operationId": "clear_tasks",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Name of the task whose results need to be deleted",
+              "title": "Name"
+            },
+            "description": "Name of the task whose results need to be deleted"
+          },
+          {
+            "name": "group_scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Optional group scope to filter tasks only belonging to a specific group. Defaults to 1.",
+              "default": 1,
+              "title": "Group Scope"
+            },
+            "description": "Optional group scope to filter tasks only belonging to a specific group. Defaults to 1."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successfully removed results of all finished parent tasks with the specified name"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/tasks/inputs": {
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Get Task Inputs",
+        "description": "Retrieves a specific input file for a task, identified by `task_id` and `input_index`. This endpoint\nallows access to input files regardless of whether the task is in queue or has finished. The input index\nis used to select among multiple input files if more than one was provided for the task.\nAdministrators can access inputs of any task, while regular users can only access inputs of their own tasks.",
+        "operationId": "get_task_inputs",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "ID of the task",
+              "title": "Task Id"
+            },
+            "description": "ID of the task"
+          },
+          {
+            "name": "input_index",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Index of the input file",
+              "title": "Input Index"
+            },
+            "description": "Index of the input file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the input file",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/octet-stream": {}
+            }
+          },
+          "404": {
+            "description": "Task or input file not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Task(task_id): input file `file_name` was not found."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/tasks/results": {
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Get Task Results",
+        "description": "Retrieves the result file associated with a specific task and node ID.\n\nThis function searches for output files in the designated output directory that match the task and node identifiers.\n\n**Parameters:**\n\n- `task_id` (int): ID of the task.\n- `node_id` (int): ID of the node.\n- `batch_index` (int, optional): Index of the node result if the node produced more than one result.\n  - If set to 0 (default), the first result file is returned.\n  - If set to a positive integer, the corresponding result file index is returned.\n  - If set to -1, all results are returned as a ZIP archive.\n\n**Returns:**\n\n- `FileResponse`: The result file or a ZIP archive containing all result files if `batch_index` is -1.\n- `HTTPException`: If the task is not completed or the result file is not found.",
+        "operationId": "get_task_results",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "ID of the task",
+              "title": "Task Id"
+            },
+            "description": "ID of the task"
+          },
+          {
+            "name": "node_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "ID of the node",
+              "title": "Node Id"
+            },
+            "description": "ID of the node"
+          },
+          {
+            "name": "batch_index",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Optional index of the node result if the node produced more than one result. If set to -1, all results for the node are returned as a ZIP archive.",
+              "default": 0,
+              "title": "Batch Index"
+            },
+            "description": "Optional index of the node result if the node produced more than one result. If set to -1, all results for the node are returned as a ZIP archive."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the result file",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/octet-stream": {}
+            }
+          },
+          "400": {
+            "description": "Task not completed",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Task `task_id` is not completed yet."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task or result file not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Missing result for task=`task_id` and node=`node_id`."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Set Task Results",
+        "description": "Saves the result files for a specific task on the server. This endpoint checks if the task exists\nand if the `worker` making the request has the authorization to upload results.\nIf the task is not found or unauthorized, a 404 HTTP error is raised.",
+        "operationId": "set_task_results",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "The ID of the task to save results for",
+              "title": "Task Id"
+            },
+            "description": "The ID of the task to save results for"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_set_task_results"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successfully saved task results"
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Task `{task_id}` was not found."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "result_file.filename does not belong to task."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/tasks/queue": {
+      "delete": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Remove Tasks From Queue",
+        "description": "Clears all unfinished tasks from the queue for a specific task name, scoped to the requesting user and group scope.\nChild tasks are ignored and not removed from the queue.",
+        "operationId": "remove_tasks_from_queue",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Name of the task to clear unfinished tasks from the queue",
+              "title": "Name"
+            },
+            "description": "Name of the task to clear unfinished tasks from the queue"
+          },
+          {
+            "name": "group_scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Optional group scope to filter tasks only belonging to a specific group. Defaults to 1.",
+              "default": 1,
+              "title": "Group Scope"
+            },
+            "description": "Optional group scope to filter tasks only belonging to a specific group. Defaults to 1."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successfully cleared unfinished tasks from the queue"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/tasks/queue/{task_id}": {
+      "delete": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Remove Task From Queue",
+        "description": "Removes a specific unfinished task from the queue using the task ID.",
+        "operationId": "remove_task_from_queue",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successfully removed the unfinished task from the queue"
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Task `{task_id}` was not found."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/tasks/next": {
+      "post": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Get Next Task",
+        "description": "Retrieves an incomplete task for a `worker` to process. Workers provide a list of tasks names they can handle\nand optionally the name of the last task they were working on to prioritize similar types of tasks. If a\nworker is associated with an admin account, it can retrieve tasks regardless of user assignment; otherwise,\nit retrieves only those assigned to the user.",
+        "operationId": "get_next_task",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_get_next_task"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the task for the worker",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "204": {
+            "description": "No incomplete tasks available for the worker"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/tasks/lock": {
+      "delete": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Remove Task Lock",
+        "description": "Unlocks a task specified by the `task_id`. This endpoint checks if the task exists\nand if the `worker` making the request has the authorization to unlock it.\nIf the task is not found or unauthorized, a 404 HTTP error is raised.",
+        "operationId": "remove_task_lock",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "The ID of the task to remove the lock from",
+              "title": "Task Id"
+            },
+            "description": "The ID of the task to remove the lock from"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successfully removed task lock"
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Task `{task_id}` was not found."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/tasks/update": {
+      "put": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Update Task Info",
+        "description": "Updates the information of a task specified by `task_id`. Only tasks that have not yet started (progress == 0.0)\ncan be updated. Currently, only the `priority` field can be updated.\n\nThe `priority` parameter must not exceed 15.\n\nAccess is restricted to the task owner or an administrator.",
+        "operationId": "update_task_info",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "ID of the task to update",
+              "title": "Task Id"
+            },
+            "description": "ID of the task to update"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskUpdateRequest",
+                "description": "Fields to update"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successfully updated the task"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Task started": {
+                    "summary": "Task already started",
+                    "value": {
+                      "detail": "Task `{task_id}` cannot be updated because it has already started."
+                    }
+                  },
+                  "Invalid priority": {
+                    "summary": "Invalid priority",
+                    "value": {
+                      "detail": "Priority cannot be greater than 15."
+                    }
+                  },
+                  "No fields": {
+                    "summary": "No fields to update",
+                    "value": {
+                      "detail": "No valid fields to update."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Task `{task_id}` was not found."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/workers/info": {
+      "get": {
+        "tags": [
+          "workers"
+        ],
+        "summary": "Get Info",
+        "description": "Fetches details about workers including their system and device information.\nThis endpoint allows filtering of workers based on their last active status and can also\nretrieve information for a specific worker if a worker ID is provided.\nUseful for monitoring and managing worker resources in distributed computing environments.",
+        "operationId": "get_info",
+        "parameters": [
+          {
+            "name": "last_seen_interval",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "The time interval in seconds within which workers must have marked themselves active. If specified, only workers who have reported activity within this interval will be returned.",
+              "default": 0,
+              "title": "Last Seen Interval"
+            },
+            "description": "The time interval in seconds within which workers must have marked themselves active. If specified, only workers who have reported activity within this interval will be returned."
+          },
+          {
+            "name": "worker_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "An optional worker ID to retrieve details for a specific worker.",
+              "default": "",
+              "title": "Worker Id"
+            },
+            "description": "An optional worker ID to retrieve details for a specific worker."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkerDetails"
+                  },
+                  "title": "Response Get Info"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/workers/settings": {
+      "post": {
+        "tags": [
+          "workers"
+        ],
+        "summary": "Set Worker Settings",
+        "description": "Sets the desired worker settings that should differ from the defaults.\nThe administrator can change settings for all workers, users only for their own workers.",
+        "operationId": "set_worker_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkerSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Worker settings set successfully"
+          },
+          "404": {
+            "description": "Worker not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Can't find `worker_id` worker."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/federation/instances": {
+      "get": {
+        "tags": [
+          "federation"
+        ],
+        "summary": "List Federated Instances",
+        "description": "Retrieve a list of all federated instances.\nRequires administrative privileges.",
+        "operationId": "list_federated_instances",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FederatedInstance"
+                  },
+                  "type": "array",
+                  "title": "Response List Federated Instances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/federation/instance": {
+      "post": {
+        "tags": [
+          "federation"
+        ],
+        "summary": "Create Federated Instance",
+        "description": "Create a new federated instance.\nRequires administrative privileges.",
+        "operationId": "create_federated_instance",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FederatedInstanceCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Federated instance created successfully",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Federated instance already exists or invalid data"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "federation"
+        ],
+        "summary": "Delete Federated Instance",
+        "description": "Delete a federated instance by its name.\nRequires administrative privileges.",
+        "operationId": "delete_federated_instance",
+        "parameters": [
+          {
+            "name": "instance_name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Name of the federated instance to delete",
+              "title": "Instance Name"
+            },
+            "description": "Name of the federated instance to delete"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Federated instance deleted successfully"
+          },
+          "404": {
+            "description": "Federated instance not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "federation"
+        ],
+        "summary": "Update Federated Instance Endpoint",
+        "description": "Update an existing federated instance.\nRequires administrative privileges.",
+        "operationId": "update_federated_instance_endpoint",
+        "parameters": [
+          {
+            "name": "instance_name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Name of the federated instance to update",
+              "title": "Instance Name"
+            },
+            "description": "Name of the federated instance to update"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FederatedInstanceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Federated instance updated successfully"
+          },
+          "404": {
+            "description": "Federated instance not found or no update performed"
+          },
+          "400": {
+            "description": "No valid fields provided for update"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vapi/federation/instance_info": {
+      "get": {
+        "tags": [
+          "federation"
+        ],
+        "summary": "Get Instance Info",
+        "operationId": "get_instance_info",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederatedInstanceInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AIResourceModel": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Unique name of the model."
+          },
+          "types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Types",
+            "description": "ComfyUI model types to which model belongs(e.g 'checkpoints', 'loras').",
+            "default": []
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename",
+            "description": "Overridden file name under which the model should be stored in the file system.",
+            "default": ""
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "URL from which the model can be downloaded."
+          },
+          "homepage": {
+            "type": "string",
+            "title": "Homepage",
+            "description": "Webpage with detailed information about the model.",
+            "default": ""
+          },
+          "hash": {
+            "type": "string",
+            "title": "Hash",
+            "description": "SHA256 hash of the model file for integrity verification."
+          },
+          "hashes": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Hashes",
+            "description": "For archives, may contain filename:hash pairs for integrity checks after the archive is deleted.",
+            "default": {}
+          },
+          "regexes": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Regexes",
+            "description": "List of regex patterns that dynamically resolve model details based on workflow configurations.",
+            "default": []
+          },
+          "gated": {
+            "type": "boolean",
+            "title": "Gated",
+            "description": "Flag showing is the model closed to public access.",
+            "default": false
+          },
+          "file_size": {
+            "type": "integer",
+            "title": "File Size",
+            "description": "The size of the model file in bytes."
+          },
+          "installed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Installed",
+            "description": "Flag indicating whether the model is already installed. Currently, this field is populated only by the `/flows/installed` and `/flows/not-installed` endpoints."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "url",
+          "hash",
+          "file_size"
+        ],
+        "title": "AIResourceModel",
+        "description": "Represents an AI model resource within a Flow.\n\nThis model provides a structured way to handle AI\nmodels that are integral to workflows, ensuring that each model can be dynamically\nresolved, downloaded, and verified before use."
+      },
+      "Body_get_next_task": {
+        "properties": {
+          "worker_details": {
+            "$ref": "#/components/schemas/WorkerDetailsRequest"
+          },
+          "tasks_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tasks Names",
+            "description": "List of task names the worker can handle"
+          },
+          "last_task_name": {
+            "type": "string",
+            "title": "Last Task Name",
+            "description": "Optional name of the last task the worker was working on",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "worker_details",
+          "tasks_names"
+        ],
+        "title": "Body_get_next_task"
+      },
+      "Body_install_from_file": {
+        "properties": {
+          "flow_file": {
+            "type": "string",
+            "format": "binary",
+            "title": "Flow File",
+            "description": "The ComfyUI workflow file to be uploaded and installed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "flow_file"
+        ],
+        "title": "Body_install_from_file"
+      },
+      "Body_set_global": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "The key of the setting to update"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "description": "The value of the setting to update, or an empty string to delete the setting"
+          },
+          "sensitive": {
+            "type": "boolean",
+            "title": "Sensitive",
+            "description": "Flag that determines whether the value can be available to users or not"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "value",
+          "sensitive"
+        ],
+        "title": "Body_set_global"
+      },
+      "Body_set_task_results": {
+        "properties": {
+          "files": {
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "type": "array",
+            "title": "Files",
+            "description": "List of result files to save"
+          }
+        },
+        "type": "object",
+        "required": [
+          "files"
+        ],
+        "title": "Body_set_task_results"
+      },
+      "Body_set_user": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "The key of the setting to update"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "description": "The value of the setting to update, or an empty string to delete the setting"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "value"
+        ],
+        "title": "Body_set_user"
+      },
+      "Body_update_task_progress": {
+        "properties": {
+          "worker_details": {
+            "$ref": "#/components/schemas/WorkerDetailsRequest"
+          },
+          "task_id": {
+            "type": "integer",
+            "title": "Task Id",
+            "description": "ID of the task to update progress for"
+          },
+          "progress": {
+            "type": "number",
+            "title": "Progress",
+            "description": "Progress percentage of the task"
+          },
+          "execution_time": {
+            "type": "number",
+            "title": "Execution Time",
+            "description": "Execution time of the task in seconds"
+          },
+          "error": {
+            "type": "string",
+            "title": "Error",
+            "description": "Error message if any",
+            "default": ""
+          },
+          "execution_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "worker_details",
+          "task_id",
+          "progress",
+          "execution_time"
+        ],
+        "title": "Body_update_task_progress"
+      },
+      "ComfyEngineDetails": {
+        "properties": {
+          "disable_smart_memory": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disable Smart Memory",
+            "description": "Flag indicating whether ComfyUIs 'smart memory' was disabled."
+          },
+          "vram_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vram State",
+            "description": "Current VRAM management mode used by ComfyUI."
+          },
+          "cache_type": {
+            "type": "string",
+            "title": "Cache Type",
+            "description": "The type of cache that is in use (classic, lru, none).",
+            "default": "classic"
+          },
+          "cache_size": {
+            "type": "integer",
+            "title": "Cache Size",
+            "description": "How many node results to cache (applies only when cache_type is lru).",
+            "default": 1
+          },
+          "vae_cpu": {
+            "type": "boolean",
+            "title": "Vae Cpu",
+            "description": "Does decoding VAE on CPU is enabled.",
+            "default": false
+          },
+          "reserve_vram": {
+            "type": "number",
+            "title": "Reserve Vram",
+            "description": "Amount of VRAM in GB reserved for use by other software.",
+            "default": 0.6
+          }
+        },
+        "type": "object",
+        "title": "ComfyEngineDetails",
+        "description": "Performance options that ComfyUI is running with."
+      },
+      "ComfyUIFolderPath": {
+        "properties": {
+          "full_path": {
+            "type": "string",
+            "title": "Full Path",
+            "description": "The full filesystem path of the folder."
+          },
+          "create_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Create Time",
+            "description": "The folder's creation time as a datetime object."
+          },
+          "total_size": {
+            "type": "integer",
+            "title": "Total Size",
+            "description": "The total size of the folder in bytes."
+          }
+        },
+        "type": "object",
+        "required": [
+          "full_path",
+          "create_time",
+          "total_size"
+        ],
+        "title": "ComfyUIFolderPath",
+        "description": "Represents a folder path in ComfyUI with metadata, including modification options, creation time, and size."
+      },
+      "ComfyUIFolderPaths": {
+        "properties": {
+          "folders": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/ComfyUIFolderPath"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Folders",
+            "description": "A mapping of folder keys to a list of folder paths with metadata."
+          }
+        },
+        "type": "object",
+        "required": [
+          "folders"
+        ],
+        "title": "ComfyUIFolderPaths",
+        "description": "Represents a mapping of folder keys to their corresponding folder paths and metadata."
+      },
+      "CustomLoraDefinition": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Unique name of the model."
+          },
+          "types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Types",
+            "description": "ComfyUI model types to which model belongs(e.g 'checkpoints', 'loras').",
+            "default": []
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename",
+            "description": "Overridden file name under which the model should be stored in the file system.",
+            "default": ""
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "URL from which the model can be downloaded."
+          },
+          "homepage": {
+            "type": "string",
+            "title": "Homepage",
+            "description": "Webpage with detailed information about the model.",
+            "default": ""
+          },
+          "hash": {
+            "type": "string",
+            "title": "Hash",
+            "description": "SHA256 hash of the model file for integrity verification."
+          },
+          "hashes": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Hashes",
+            "description": "For archives, may contain filename:hash pairs for integrity checks after the archive is deleted.",
+            "default": {}
+          },
+          "regexes": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Regexes",
+            "description": "List of regex patterns that dynamically resolve model details based on workflow configurations.",
+            "default": []
+          },
+          "gated": {
+            "type": "boolean",
+            "title": "Gated",
+            "description": "Flag showing is the model closed to public access.",
+            "default": false
+          },
+          "file_size": {
+            "type": "integer",
+            "title": "File Size",
+            "description": "The size of the model file in bytes."
+          },
+          "installed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Installed",
+            "description": "Flag indicating whether the model is already installed. Currently, this field is populated only by the `/flows/installed` and `/flows/not-installed` endpoints."
+          },
+          "strength_model": {
+            "type": "number",
+            "title": "Strength Model",
+            "description": "Default strength of the LoRA model.",
+            "default": 1.0
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name",
+            "description": "Text to display for the LoRA slider.",
+            "default": ""
+          },
+          "trigger_words": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Trigger Words",
+            "description": "List of words to trigger the LoRA.",
+            "default": []
+          },
+          "node_id": {
+            "type": "string",
+            "title": "Node Id",
+            "description": "ComfyUI Node ID from which this definition was created."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "url",
+          "hash",
+          "file_size",
+          "node_id"
+        ],
+        "title": "CustomLoraDefinition",
+        "description": "Definition of custom LoRA added to the flow. Backend will automatically generate inputs for it."
+      },
+      "CustomLoraDefinitionRequest": {
+        "properties": {
+          "strength_model": {
+            "type": "number",
+            "title": "Strength Model",
+            "description": "Default strength of the LoRA model.",
+            "default": 1.0
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name",
+            "description": "Text to display for the LoRA slider."
+          },
+          "model_url": {
+            "type": "string",
+            "title": "Model Url",
+            "description": "The CivitAI URL for this model, allowing to embed this model in Flow."
+          }
+        },
+        "type": "object",
+        "required": [
+          "display_name",
+          "model_url"
+        ],
+        "title": "CustomLoraDefinitionRequest",
+        "description": "Represents a custom LoRA model to be embedded in the flow."
+      },
+      "ExecutionDetails": {
+        "properties": {
+          "disable_smart_memory": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disable Smart Memory",
+            "description": "Flag indicating whether ComfyUIs 'smart memory' was disabled."
+          },
+          "vram_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vram State",
+            "description": "Current VRAM management mode used by ComfyUI."
+          },
+          "cache_type": {
+            "type": "string",
+            "title": "Cache Type",
+            "description": "The type of cache that is in use (classic, lru, none).",
+            "default": "classic"
+          },
+          "cache_size": {
+            "type": "integer",
+            "title": "Cache Size",
+            "description": "How many node results to cache (applies only when cache_type is lru).",
+            "default": 1
+          },
+          "vae_cpu": {
+            "type": "boolean",
+            "title": "Vae Cpu",
+            "description": "Does decoding VAE on CPU is enabled.",
+            "default": false
+          },
+          "reserve_vram": {
+            "type": "number",
+            "title": "Reserve Vram",
+            "description": "Amount of VRAM in GB reserved for use by other software.",
+            "default": 0.6
+          },
+          "nodes_profiling": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/NodeProfiling"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nodes Profiling",
+            "description": "Profiling information for each node in the workflow."
+          },
+          "max_memory_usage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Memory Usage",
+            "description": "Maximum GPU memory usage during task execution in MB."
+          },
+          "nodes_execution_time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nodes Execution Time",
+            "description": "Execution time of all ComfyUI nodes in the workflow in seconds."
+          }
+        },
+        "type": "object",
+        "title": "ExecutionDetails",
+        "description": "Contains profiling information for the entire task execution."
+      },
+      "ExtraFlags": {
+        "properties": {
+          "profiler_execution": {
+            "type": "boolean",
+            "title": "Profiler Execution",
+            "description": "Whether profiling was enabled during task execution.",
+            "default": false
+          },
+          "unload_models": {
+            "type": "boolean",
+            "title": "Unload Models",
+            "description": "Whether all models were unloaded before task execution.",
+            "default": false
+          },
+          "federated_task": {
+            "type": "boolean",
+            "title": "Federated Task",
+            "description": "Whether the task originated from a federated instance.",
+            "default": false
+          },
+          "save_metadata": {
+            "type": "boolean",
+            "title": "Save Metadata",
+            "description": "Whether the ComfyUI workflow metadata was saved.",
+            "default": false
+          },
+          "smart_memory": {
+            "type": "boolean",
+            "title": "Smart Memory",
+            "description": "Whether ComfyUI smart memory was enabled.",
+            "default": false
+          },
+          "cache_type": {
+            "type": "string",
+            "title": "Cache Type",
+            "description": "The type of cache that was used (classic, lru, none).",
+            "default": "classic"
+          },
+          "cache_size": {
+            "type": "integer",
+            "title": "Cache Size",
+            "description": "How many node results were cached (applied only when cache_type was lru).",
+            "default": 1
+          },
+          "vae_cpu": {
+            "type": "boolean",
+            "title": "Vae Cpu",
+            "description": "Flag indicating was VAE decoded on the CPU or not.",
+            "default": false
+          },
+          "reserve_vram": {
+            "type": "number",
+            "title": "Reserve Vram",
+            "description": "Amount of VRAM in GB that was reserved for use by other software..",
+            "default": 0.6
+          }
+        },
+        "type": "object",
+        "title": "ExtraFlags",
+        "description": "Additional options and flags that were applied during task execution."
+      },
+      "FederatedInstance": {
+        "properties": {
+          "instance_name": {
+            "type": "string",
+            "title": "Instance Name",
+            "description": "Unique name of the federated instance."
+          },
+          "url_address": {
+            "type": "string",
+            "title": "Url Address",
+            "description": "Address of the federated instance."
+          },
+          "username": {
+            "type": "string",
+            "title": "Username",
+            "description": "The username present on the remote instance."
+          },
+          "password": {
+            "type": "string",
+            "title": "Password",
+            "description": "Password for the username."
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Indicates if the federated instance is currently active.",
+            "default": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Timestamp when the federated instance record was created."
+          },
+          "installed_flows": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Installed Flows",
+            "description": "A dictionary with installed Flows identifiers and their versions."
+          }
+        },
+        "type": "object",
+        "required": [
+          "instance_name",
+          "url_address",
+          "username",
+          "password",
+          "created_at",
+          "installed_flows"
+        ],
+        "title": "FederatedInstance"
+      },
+      "FederatedInstanceCreate": {
+        "properties": {
+          "instance_name": {
+            "type": "string",
+            "title": "Instance Name",
+            "description": "Unique name of the federated instance."
+          },
+          "url_address": {
+            "type": "string",
+            "title": "Url Address",
+            "description": "Address of the federated instance."
+          },
+          "username": {
+            "type": "string",
+            "title": "Username",
+            "description": "The username present on the remote instance."
+          },
+          "password": {
+            "type": "string",
+            "title": "Password",
+            "description": "Password for the username."
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Indicates if the federated instance is currently active.",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "instance_name",
+          "url_address",
+          "username",
+          "password"
+        ],
+        "title": "FederatedInstanceCreate"
+      },
+      "FederatedInstanceInfo": {
+        "properties": {
+          "workers": {
+            "items": {
+              "$ref": "#/components/schemas/WorkerDetails"
+            },
+            "type": "array",
+            "title": "Workers",
+            "description": "List of available workers on the instance.",
+            "default": []
+          },
+          "installed_flows": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Installed Flows",
+            "description": "A dictionary with installed Flows identifiers and their versions.",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "title": "FederatedInstanceInfo"
+      },
+      "FederatedInstanceUpdate": {
+        "properties": {
+          "url_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url Address",
+            "description": "New address of the federated instance."
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username",
+            "description": "New username for the remote instance."
+          },
+          "password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password",
+            "description": "New password for the username."
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled",
+            "description": "New active status for the federated instance."
+          }
+        },
+        "type": "object",
+        "title": "FederatedInstanceUpdate"
+      },
+      "Flow": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The unique identifier of the flow."
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name",
+            "description": "The user-friendly name of the flow."
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "A brief explanation of the flow's purpose and functionality.",
+            "default": ""
+          },
+          "author": {
+            "type": "string",
+            "title": "Author",
+            "description": "The creator or maintainer of the flow."
+          },
+          "homepage": {
+            "type": "string",
+            "title": "Homepage",
+            "description": "A URL to the flow's homepage or the author's website.",
+            "default": ""
+          },
+          "license": {
+            "type": "string",
+            "title": "License",
+            "description": "The type of license under which the flow is made available.",
+            "default": ""
+          },
+          "documentation": {
+            "type": "string",
+            "title": "Documentation",
+            "description": "A URL linking to detailed documentation for the flow.",
+            "default": ""
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "Tags describing this flow.",
+            "default": []
+          },
+          "sub_flows": {
+            "items": {
+              "$ref": "#/components/schemas/SubFlow"
+            },
+            "type": "array",
+            "title": "Sub Flows",
+            "description": "A list of subflows derived from this flow, allowing customization or extension.",
+            "default": []
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/AIResourceModel"
+            },
+            "type": "array",
+            "title": "Models",
+            "description": "A list of models used by the ComfyUI workflow.",
+            "default": []
+          },
+          "input_params": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Input Params",
+            "description": "Initial set of parameters required to launch the flow, potentially modifiable by subflows."
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "Internal version of the flow in major.minor format.",
+            "default": ""
+          },
+          "requires": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Requires",
+            "description": "Required external workflow dependencies.",
+            "default": []
+          },
+          "private": {
+            "type": "boolean",
+            "title": "Private",
+            "description": "Whether the workflow is missing from the `FLOWS_CATALOG_URL`",
+            "default": false
+          },
+          "hidden": {
+            "type": "boolean",
+            "title": "Hidden",
+            "description": "Flag for hiding flow from UI when flow is intended for use only in some special cases.",
+            "default": false
+          },
+          "new_version_available": {
+            "type": "string",
+            "title": "New Version Available",
+            "description": "If not empty, contains the new version of the workflow.",
+            "default": ""
+          },
+          "is_seed_supported": {
+            "type": "boolean",
+            "title": "Is Seed Supported",
+            "description": "Flag determining if 'Random Seed' input will be displayed in the UI.",
+            "default": true
+          },
+          "is_count_supported": {
+            "type": "boolean",
+            "title": "Is Count Supported",
+            "description": "Flag determining if 'Number of images' input will be displayed in the UI.",
+            "default": true
+          },
+          "is_translations_supported": {
+            "type": "boolean",
+            "title": "Is Translations Supported",
+            "description": "Flag that determines whether Flow supports prompt translations.",
+            "default": false
+          },
+          "is_macos_supported": {
+            "type": "boolean",
+            "title": "Is Macos Supported",
+            "description": "Flag indicating whether the macOS PyTorch version can correctly run this flow.",
+            "default": true
+          },
+          "is_supported_by_workers": {
+            "type": "boolean",
+            "title": "Is Supported By Workers",
+            "description": "Flag indicating if this flow can run on workers based on their capabilities.",
+            "default": true
+          },
+          "required_memory_gb": {
+            "type": "number",
+            "title": "Required Memory Gb",
+            "description": "Minimum amount of memory (in gigabytes) required to execute this flow.",
+            "default": 0.0
+          },
+          "lora_connect_points": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LoraConnectionPoint"
+            },
+            "type": "object",
+            "title": "Lora Connect Points",
+            "description": "Connection points in the flow where LoRAs can be dynamically integrated, enabling the addition of custom LoRAs at specific locations. Key is a unique ID that used to reference specific connection during Flow editing.",
+            "default": {}
+          },
+          "is_surprise_me_supported": {
+            "type": "boolean",
+            "title": "Is Surprise Me Supported",
+            "description": "Flag indicating if Flow supports random prompt generation feature.",
+            "default": false
+          },
+          "remote_vae": {
+            "type": "boolean",
+            "title": "Remote Vae",
+            "description": "Flag indicating whether Flow supports remote VAE decoding.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "display_name",
+          "author",
+          "input_params"
+        ],
+        "title": "Flow",
+        "description": "Flows serve as add-ons to ComfyUI workflows, determining the parameters to be displayed and populated.\nThey also allow for the modification of ComfyUI workflow behavior based on incoming parameters."
+      },
+      "FlowCloneRequest": {
+        "properties": {
+          "original_flow_name": {
+            "type": "string",
+            "title": "Original Flow Name",
+            "description": "Name of the installed flow to clone from."
+          },
+          "new_name": {
+            "type": "string",
+            "title": "New Name",
+            "description": "New internal name for the cloned flow (must be unique)."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/FlowMetadataUpdate",
+            "description": "New metadata to apply to the cloned flow."
+          },
+          "lora_connection_points": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "$ref": "#/components/schemas/CustomLoraDefinitionRequest"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lora Connection Points",
+            "description": "Optional LoRA connection points for the new flow. These should align with the connection points defined in the original flow."
+          }
+        },
+        "type": "object",
+        "required": [
+          "original_flow_name",
+          "new_name",
+          "metadata"
+        ],
+        "title": "FlowCloneRequest",
+        "description": "Represents the data required to clone and modify an existing flow.\n\nThis model is used to create a new flow by copying from an existing one\nand optionally updating its metadata, LoRA connection points, or other attributes.\nIt allows for targeted customization while preserving the base functionality of the original flow."
+      },
+      "FlowMetadataUpdate": {
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "title": "Display Name",
+            "description": "New display name for the flow."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Updated description of the flow."
+          },
+          "license": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License",
+            "description": "Updated license for the flow."
+          },
+          "required_memory_gb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Memory Gb",
+            "description": "Updated required memory (in GB) for the flow."
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version",
+            "description": "Updated version of the flow."
+          }
+        },
+        "type": "object",
+        "required": [
+          "display_name"
+        ],
+        "title": "FlowMetadataUpdate"
+      },
+      "FlowProgressInstall": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the flow being installed."
+          },
+          "flow": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Flow"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Parsed information about Flow in Visionatrix format."
+          },
+          "flow_comfy": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Flow Comfy",
+            "description": "The ComfyUI workflow which are installed."
+          },
+          "progress": {
+            "type": "number",
+            "title": "Progress",
+            "description": "The current progress of the installation, ranging from 0 to 100."
+          },
+          "error": {
+            "type": "string",
+            "title": "Error",
+            "description": "Details of any error encountered during the installation process.",
+            "default": ""
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At",
+            "description": "Timestamp when the installation process started."
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Timestamp of the last update to the installation progress."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "flow_comfy",
+          "progress",
+          "started_at",
+          "updated_at"
+        ],
+        "title": "FlowProgressInstall",
+        "description": "Represents the progress status of a flow installation process."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LoraConnectionPoint": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "A brief description of the functionality or purpose of this connection point for integrating LoRAs into the flow.",
+            "default": ""
+          },
+          "base_model_type": {
+            "type": "string",
+            "title": "Base Model Type",
+            "description": "Specifies the base model type in the CivitAI format that is compatible with this connection point, allowing the UI to filter applicable LoRAs."
+          },
+          "connected_loras": {
+            "items": {
+              "$ref": "#/components/schemas/CustomLoraDefinition"
+            },
+            "type": "array",
+            "title": "Connected Loras",
+            "description": "A list of LoRAs that are currently connected to this point in the flow.",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "base_model_type"
+        ],
+        "title": "LoraConnectionPoint",
+        "description": "Represents a connection point in the flow where LoRAs can be added.\nProvides details necessary for the UI to manage dynamic LoRA integration within the flow."
+      },
+      "NodeProfiling": {
+        "properties": {
+          "execution_time": {
+            "type": "number",
+            "title": "Execution Time",
+            "description": "Execution time of the node in seconds."
+          },
+          "gpu_memory_usage": {
+            "type": "number",
+            "title": "Gpu Memory Usage",
+            "description": "GPU memory consumed by the node in MB."
+          },
+          "class_type": {
+            "type": "string",
+            "title": "Class Type",
+            "description": "Class type of the node."
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Title of the node."
+          },
+          "node_id": {
+            "type": "string",
+            "title": "Node Id",
+            "description": "Unique identifier of the node."
+          }
+        },
+        "type": "object",
+        "required": [
+          "execution_time",
+          "gpu_memory_usage",
+          "class_type",
+          "title",
+          "node_id"
+        ],
+        "title": "NodeProfiling",
+        "description": "Represents profiling information for a single node in the workflow."
+      },
+      "OllamaModelItem": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Name of the model."
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size",
+            "description": "Size of the model file in bytes."
+          },
+          "modified_at": {
+            "type": "number",
+            "title": "Modified At",
+            "description": "Unix timestamp of the last modification time of the model file."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "size",
+          "modified_at"
+        ],
+        "title": "OllamaModelItem",
+        "description": "Represents a single model file on the Ollama server."
+      },
+      "OrphanModel": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "description": "The relative path of the orphaned model file within 'models_dir' directory."
+          },
+          "full_path": {
+            "type": "string",
+            "title": "Full Path",
+            "description": "Full path to the orphaned model file."
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size",
+            "description": "Size of the orphaned model file in bytes."
+          },
+          "creation_time": {
+            "type": "number",
+            "title": "Creation Time",
+            "description": "The file's creation time in seconds."
+          },
+          "res_model": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AIResourceModel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "AIResourceModel describing the file, if any matches."
+          },
+          "possible_flows": {
+            "items": {
+              "$ref": "#/components/schemas/Flow"
+            },
+            "type": "array",
+            "title": "Possible Flows",
+            "description": "List of possible flows that could potentially use this model.",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "full_path",
+          "size",
+          "creation_time"
+        ],
+        "title": "OrphanModel",
+        "description": "Represents an orphaned model file that is not associated with any currently installed flow.\n\nThis model provides detailed information about the orphaned file, including its\nsize, potential usage in flows, and any matching AIResourceModel, if available."
+      },
+      "SubFlow": {
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "title": "Display Name",
+            "description": "The new display name when this subflow's parameters are used."
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "The type of object this subflow is applicable to, e.g., 'image', 'image-inpaint' or 'video'."
+          },
+          "input_params": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Input Params",
+            "description": "List of input parameters specific to this subflow, replacing the original flow's parameters.",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "display_name",
+          "type"
+        ],
+        "title": "SubFlow",
+        "description": "A SubFlow modifies or extends a Flow by overwriting certain parameters like display_name and input_params."
+      },
+      "TaskCreationWithFullParams": {
+        "properties": {
+          "group_scope": {
+            "type": "integer",
+            "maximum": 255.0,
+            "minimum": 1.0,
+            "title": "Group Scope",
+            "description": "Group number to which task should be assigned.",
+            "default": 1
+          },
+          "priority": {
+            "type": "integer",
+            "maximum": 15.0,
+            "minimum": 0.0,
+            "title": "Priority",
+            "description": "Execution priority. Higher numbers indicate higher priority.",
+            "default": 0
+          },
+          "child_task": {
+            "type": "integer",
+            "title": "Child Task",
+            "description": "Int boolean indicating whether to create a relation between tasks",
+            "default": 0
+          },
+          "webhook_url": {
+            "type": "string",
+            "title": "Webhook Url",
+            "description": "Optional. URL to call when task state changes. Leave empty if not needed or if using `/progress` or `/progress-summary` endpoints.",
+            "default": ""
+          },
+          "webhook_headers": {
+            "type": "string",
+            "title": "Webhook Headers",
+            "description": "Optional. Headers for webhook URL as an encoded JSON string. Used only when `webhook_url` is set.",
+            "default": ""
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed",
+            "description": "The `seed` parameter for reproducing the results of workflows.",
+            "default": 1
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Count",
+            "description": "Number of tasks to be created.",
+            "default": 1
+          },
+          "translate": {
+            "type": "integer",
+            "title": "Translate",
+            "description": "Should the prompt be translated if auto-translation option is enabled.",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "TaskCreationWithFullParams"
+      },
+      "TaskDetails": {
+        "properties": {
+          "task_id": {
+            "type": "integer",
+            "title": "Task Id",
+            "description": "Unique identifier of the task."
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority",
+            "description": "Local task priority, from 0 to 15. Default is 0.",
+            "default": 0
+          },
+          "progress": {
+            "type": "number",
+            "title": "Progress",
+            "description": "Progress from 0 to 100, task results are only available once progress reaches 100."
+          },
+          "error": {
+            "type": "string",
+            "title": "Error",
+            "description": "If this field is not empty, it indicates an error that occurred during task execution."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The unique identifier of the flow."
+          },
+          "input_params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Input Params",
+            "description": "Incoming textual parameters based on which the ComfyUI workflow was generated."
+          },
+          "outputs": {
+            "items": {
+              "$ref": "#/components/schemas/TaskDetailsOutput"
+            },
+            "type": "array",
+            "title": "Outputs",
+            "description": "ComfyUI nodes from which results can be retrieved."
+          },
+          "input_files": {
+            "items": {
+              "$ref": "#/components/schemas/TaskDetailsInput"
+            },
+            "type": "array",
+            "title": "Input Files",
+            "description": "Incoming file parameters based on which the ComfyUI workflow was generated."
+          },
+          "locked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locked At",
+            "description": "Lock time if task is locked."
+          },
+          "worker_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Worker Id",
+            "description": "Unique identifier of the worker working on the task."
+          },
+          "execution_time": {
+            "type": "number",
+            "title": "Execution Time",
+            "description": "Execution time of the ComfyUI workflow in seconds."
+          },
+          "group_scope": {
+            "type": "integer",
+            "title": "Group Scope",
+            "description": "Group number to which task is assigned.",
+            "default": 1
+          },
+          "parent_task_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Task Id",
+            "description": "Parent task ID if is a child task."
+          },
+          "parent_task_node_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Task Node Id",
+            "description": "Parent task Node ID if is a child task."
+          },
+          "child_tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskDetailsShort"
+            },
+            "type": "array",
+            "title": "Child Tasks",
+            "description": "List of child tasks of type `TaskDetailsShort` if any.",
+            "default": []
+          },
+          "translated_input_params": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translated Input Params",
+            "description": "If auto-translation feature is enabled, contains translations for input values."
+          },
+          "extra_flags": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExtraFlags"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set of additional options and flags that affect how the task is executed."
+          },
+          "hidden": {
+            "type": "boolean",
+            "title": "Hidden",
+            "description": "Flag showing is this the internal task that should not be displayed by default."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Task creation time."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "Last task update time."
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "Finish time of the task."
+          },
+          "flow_comfy": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Flow Comfy",
+            "description": "The final generated ComfyUI workflow."
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "User ID to whom the task belongs."
+          },
+          "webhook_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook Url",
+            "description": "URL that was set to be called when the task state changes."
+          },
+          "webhook_headers": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook Headers",
+            "description": "Headers that were set to be sent to the webhook URL."
+          },
+          "execution_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionDetails"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Profiling information about task execution, present only if profiling was enabled for this task."
+          },
+          "custom_worker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Worker",
+            "description": "ID of the worker to which the task was explicitly assigned, if specified."
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "progress",
+          "error",
+          "name",
+          "input_params",
+          "outputs",
+          "input_files",
+          "execution_time",
+          "hidden",
+          "created_at",
+          "flow_comfy",
+          "user_id"
+        ],
+        "title": "TaskDetails",
+        "description": "Detailed information about the Task."
+      },
+      "TaskDetailsInput": {
+        "properties": {
+          "file_name": {
+            "type": "string",
+            "title": "File Name",
+            "description": "Format of name is 'task_id' + '_' + 'index'"
+          },
+          "file_size": {
+            "type": "integer",
+            "title": "File Size",
+            "description": "Size of file in bytes."
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_name",
+          "file_size"
+        ],
+        "title": "TaskDetailsInput",
+        "description": "Information about input file to a ComfyUI workflow."
+      },
+      "TaskDetailsOutput": {
+        "properties": {
+          "comfy_node_id": {
+            "type": "integer",
+            "title": "Comfy Node Id",
+            "description": "ID of the ComfyUI node containing the result."
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Type of the result from the ComfyUI node - can be either 'image', 'image-mask', 'image-animated', 'video' or 'audio'."
+          },
+          "file_size": {
+            "type": "integer",
+            "title": "File Size",
+            "description": "Size of file(s) in bytes.",
+            "default": -1
+          },
+          "batch_size": {
+            "type": "integer",
+            "title": "Batch Size",
+            "description": "Count of outputs(files) produced by node.",
+            "default": -1
+          }
+        },
+        "type": "object",
+        "required": [
+          "comfy_node_id",
+          "type"
+        ],
+        "title": "TaskDetailsOutput",
+        "description": "Contains information for retrieving the results of a ComfyUI workflow."
+      },
+      "TaskDetailsShort": {
+        "properties": {
+          "task_id": {
+            "type": "integer",
+            "title": "Task Id",
+            "description": "Unique identifier of the task."
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority",
+            "description": "Local task priority, from 0 to 15. Default is 0.",
+            "default": 0
+          },
+          "progress": {
+            "type": "number",
+            "title": "Progress",
+            "description": "Progress from 0 to 100, task results are only available once progress reaches 100."
+          },
+          "error": {
+            "type": "string",
+            "title": "Error",
+            "description": "If this field is not empty, it indicates an error that occurred during task execution."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The unique identifier of the flow."
+          },
+          "input_params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Input Params",
+            "description": "Incoming textual parameters based on which the ComfyUI workflow was generated."
+          },
+          "outputs": {
+            "items": {
+              "$ref": "#/components/schemas/TaskDetailsOutput"
+            },
+            "type": "array",
+            "title": "Outputs",
+            "description": "ComfyUI nodes from which results can be retrieved."
+          },
+          "input_files": {
+            "items": {
+              "$ref": "#/components/schemas/TaskDetailsInput"
+            },
+            "type": "array",
+            "title": "Input Files",
+            "description": "Incoming file parameters based on which the ComfyUI workflow was generated."
+          },
+          "locked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locked At",
+            "description": "Lock time if task is locked."
+          },
+          "worker_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Worker Id",
+            "description": "Unique identifier of the worker working on the task."
+          },
+          "execution_time": {
+            "type": "number",
+            "title": "Execution Time",
+            "description": "Execution time of the ComfyUI workflow in seconds."
+          },
+          "group_scope": {
+            "type": "integer",
+            "title": "Group Scope",
+            "description": "Group number to which task is assigned.",
+            "default": 1
+          },
+          "parent_task_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Task Id",
+            "description": "Parent task ID if is a child task."
+          },
+          "parent_task_node_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Task Node Id",
+            "description": "Parent task Node ID if is a child task."
+          },
+          "child_tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskDetailsShort"
+            },
+            "type": "array",
+            "title": "Child Tasks",
+            "description": "List of child tasks of type `TaskDetailsShort` if any.",
+            "default": []
+          },
+          "translated_input_params": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translated Input Params",
+            "description": "If auto-translation feature is enabled, contains translations for input values."
+          },
+          "extra_flags": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExtraFlags"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set of additional options and flags that affect how the task is executed."
+          },
+          "hidden": {
+            "type": "boolean",
+            "title": "Hidden",
+            "description": "Flag showing is this the internal task that should not be displayed by default."
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "progress",
+          "error",
+          "name",
+          "input_params",
+          "outputs",
+          "input_files",
+          "execution_time",
+          "hidden"
+        ],
+        "title": "TaskDetailsShort",
+        "description": "Brief information about the Task."
+      },
+      "TaskRunResults": {
+        "properties": {
+          "tasks_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Tasks Ids",
+            "description": "List of IDs representing the tasks that were created."
+          },
+          "outputs": {
+            "items": {
+              "$ref": "#/components/schemas/TaskDetailsOutput"
+            },
+            "type": "array",
+            "title": "Outputs",
+            "description": "List of outputs for the created tasks."
+          }
+        },
+        "type": "object",
+        "required": [
+          "tasks_ids",
+          "outputs"
+        ],
+        "title": "TaskRunResults"
+      },
+      "TaskUpdateRequest": {
+        "properties": {
+          "priority": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 15.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority",
+            "description": "New priority level for task. Higher numbers indicate higher priority. Maximum value is 15."
+          }
+        },
+        "type": "object",
+        "required": [
+          "priority"
+        ],
+        "title": "TaskUpdateRequest",
+        "description": "Represents the fields that can be updated for a task that has not yet started execution.\n\nThis model allows clients to specify new values for task properties that are editable\nbefore the task begins processing."
+      },
+      "TranslatePromptRequest": {
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "The image generation prompt to translate."
+          },
+          "system_prompt": {
+            "type": "string",
+            "title": "System Prompt",
+            "description": "System instructions that are passed to the LLM."
+          }
+        },
+        "type": "object",
+        "required": [
+          "prompt"
+        ],
+        "title": "TranslatePromptRequest",
+        "description": "Represents the request data for translating an image generation prompt."
+      },
+      "TranslatePromptResponse": {
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "The original prompt provided in the request."
+          },
+          "result": {
+            "type": "string",
+            "title": "Result",
+            "description": "The translated prompt in English."
+          },
+          "done_reason": {
+            "type": "string",
+            "title": "Done Reason",
+            "description": "The reason the translation generation was completed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "prompt",
+          "result",
+          "done_reason"
+        ],
+        "title": "TranslatePromptResponse",
+        "description": "Represents the response data after translating an image generation prompt.\n\nContains the original prompt provided by the user, the translated prompt in English,\nand the reason the translation process completed."
+      },
+      "UserInfo": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "Unique user ID."
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name",
+            "description": "Full name of the user.",
+            "default": ""
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Email name of the user.",
+            "default": ""
+          },
+          "is_admin": {
+            "type": "boolean",
+            "title": "Is Admin",
+            "description": "Flag showing is user is admin.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "UserInfo",
+        "description": "Minimum information provided by Authentication backends about user."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VisionatrixUpdateStatus": {
+        "properties": {
+          "current_version": {
+            "type": "string",
+            "title": "Current Version",
+            "description": "The current version of Visionatrix."
+          },
+          "next_version": {
+            "type": "string",
+            "title": "Next Version",
+            "description": "The version for update if available.",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "current_version"
+        ],
+        "title": "VisionatrixUpdateStatus",
+        "description": "Represents the update status of Visionatrix.\n\n- current_version: The version currently running.\n- target_version: The version available for update (if any)."
+      },
+      "WorkerDetails": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "The foreign key from the 'users' table, non-nullable."
+          },
+          "worker_id": {
+            "type": "string",
+            "title": "Worker Id",
+            "description": "Uniq identifier for the worker, constructed from user_id, hostname, device name and device index.If 'federated_instance_name' is specified it will be added to this field automatically."
+          },
+          "worker_version": {
+            "type": "string",
+            "title": "Worker Version",
+            "description": "Version of the worker"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen",
+            "description": "The timestamp of the worker's last activity, stored in UTC."
+          },
+          "tasks_to_give": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tasks To Give",
+            "description": "Specifies tasks that the worker can execute. An empty list indicates that all tasks are allowed."
+          },
+          "os": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Os",
+            "description": "Operating system type of the worker's machine, such as 'posix' or 'nt'."
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version",
+            "description": "The version of Python running on the worker's machine."
+          },
+          "embedded_python": {
+            "type": "boolean",
+            "title": "Embedded Python",
+            "description": "Indicates whether the Python environment is embedded (portable).",
+            "default": false
+          },
+          "device_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Name",
+            "description": "Name of the computing device."
+          },
+          "device_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Type",
+            "description": "Type of the computing device, such as 'cuda' or 'cpu'."
+          },
+          "vram_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vram Total",
+            "description": "Total VRAM available on the device in bytes."
+          },
+          "vram_free": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vram Free",
+            "description": "Free VRAM available on the device in bytes."
+          },
+          "torch_vram_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Torch Vram Total",
+            "description": "Total VRAM managed by PyTorch in bytes."
+          },
+          "torch_vram_free": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Torch Vram Free",
+            "description": "Free VRAM managed by PyTorch that is currently unused."
+          },
+          "ram_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ram Total",
+            "description": "Total RAM available on the worker in bytes."
+          },
+          "ram_free": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ram Free",
+            "description": "Free RAM available on the worker in bytes."
+          },
+          "pytorch_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pytorch Version",
+            "description": "Version of PyTorch."
+          },
+          "engine_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComfyEngineDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "federated_instance_name": {
+            "type": "string",
+            "title": "Federated Instance Name",
+            "description": "Name of the federated instance to which the worker belongs.",
+            "default": ""
+          },
+          "empty_task_requests_count": {
+            "type": "integer",
+            "title": "Empty Task Requests Count",
+            "description": "Counts the number of times the worker requested a task but received none. A value of 0 indicates that the worker is busy, while a value of 1 or more indicates that the worker is free.",
+            "default": 0
+          },
+          "last_asked_tasks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Last Asked Tasks",
+            "description": "List of flows IDs that the worker last requested to be processed.",
+            "default": []
+          },
+          "smart_memory": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smart Memory",
+            "description": "Should ComfyUI smart memory be enabled."
+          },
+          "cache_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Type",
+            "description": "The type of cache to use (classic, lru, none)."
+          },
+          "cache_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Size",
+            "description": "How many node results to cache (when cache_type is lru)."
+          },
+          "vae_cpu": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vae Cpu",
+            "description": "Should VAE be decoded on the CPU or not."
+          },
+          "reserve_vram": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reserve Vram",
+            "description": "Amount of VRAM in GB to reserve for use."
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "worker_id",
+          "worker_version",
+          "last_seen",
+          "tasks_to_give",
+          "engine_details"
+        ],
+        "title": "WorkerDetails"
+      },
+      "WorkerDetailsDeviceRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Full computing device name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Type of the device such as 'cuda' or 'cpu'",
+            "default": ""
+          },
+          "index": {
+            "type": "integer",
+            "title": "Index",
+            "description": "Computing device index",
+            "default": 0
+          },
+          "vram_total": {
+            "type": "integer",
+            "title": "Vram Total",
+            "description": "Total VRAM available on the device in bytes",
+            "default": 0
+          },
+          "vram_free": {
+            "type": "integer",
+            "title": "Vram Free",
+            "description": "Free VRAM available on the device in bytes",
+            "default": 0
+          },
+          "torch_vram_total": {
+            "type": "integer",
+            "title": "Torch Vram Total",
+            "description": "Total VRAM managed by PyTorch in bytes",
+            "default": 0
+          },
+          "torch_vram_free": {
+            "type": "integer",
+            "title": "Torch Vram Free",
+            "description": "Free VRAM managed by PyTorch in bytes",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "WorkerDetailsDeviceRequest",
+        "description": "Provides detailed information about the computing device and memory status."
+      },
+      "WorkerDetailsRequest": {
+        "properties": {
+          "worker_version": {
+            "type": "string",
+            "title": "Worker Version",
+            "description": "Version of the worker"
+          },
+          "pytorch_version": {
+            "type": "string",
+            "title": "Pytorch Version",
+            "description": "Torch version used by the worker",
+            "default": ""
+          },
+          "system": {
+            "$ref": "#/components/schemas/WorkerDetailsSystemRequest"
+          },
+          "devices": {
+            "items": {
+              "$ref": "#/components/schemas/WorkerDetailsDeviceRequest"
+            },
+            "type": "array",
+            "title": "Devices"
+          },
+          "ram_total": {
+            "type": "integer",
+            "title": "Ram Total",
+            "description": "Total RAM on the worker in bytes",
+            "default": 0
+          },
+          "ram_free": {
+            "type": "integer",
+            "title": "Ram Free",
+            "description": "Free RAM on the worker in bytes",
+            "default": 0
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen",
+            "description": "Last seen time",
+            "default": "2025-05-27T16:49:32.105128Z"
+          },
+          "engine_details": {
+            "$ref": "#/components/schemas/ComfyEngineDetails"
+          }
+        },
+        "type": "object",
+        "required": [
+          "worker_version",
+          "system",
+          "devices",
+          "engine_details"
+        ],
+        "title": "WorkerDetailsRequest",
+        "description": "Consolidates information relevant to a worker handling AI tasks."
+      },
+      "WorkerDetailsSystemRequest": {
+        "properties": {
+          "hostname": {
+            "type": "string",
+            "title": "Hostname",
+            "description": "Hostname of the worker machine"
+          },
+          "os": {
+            "type": "string",
+            "title": "Os",
+            "description": "Operating system type, e.g., 'posix', 'nt'"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "Python version information"
+          },
+          "embedded_python": {
+            "type": "boolean",
+            "title": "Embedded Python",
+            "description": "Flag indicating if Python is embedded (portable) or not"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hostname",
+          "os",
+          "version",
+          "embedded_python"
+        ],
+        "title": "WorkerDetailsSystemRequest",
+        "description": "Provides OS and Python environment details of the worker."
+      },
+      "WorkerSettingsRequest": {
+        "properties": {
+          "worker_id": {
+            "type": "string",
+            "title": "Worker Id",
+            "description": "ID of the worker"
+          },
+          "tasks_to_give": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tasks To Give",
+            "description": "List of tasks the worker should ask for."
+          },
+          "smart_memory": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smart Memory",
+            "description": "Should ComfyUI smart memory be enabled."
+          },
+          "cache_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Type",
+            "description": "The type of cache to use (classic, lru, none)."
+          },
+          "cache_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Size",
+            "description": "How many node results to cache (when cache_type is lru)."
+          },
+          "vae_cpu": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vae Cpu",
+            "description": "Should VAE be decoded on the CPU or not."
+          },
+          "reserve_vram": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reserve Vram",
+            "description": "Amount of VRAM in GB to reserve for use."
+          }
+        },
+        "type": "object",
+        "required": [
+          "worker_id"
+        ],
+        "title": "WorkerSettingsRequest",
+        "description": "Custom settings available to be set dynamically for a worker."
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8288",
+      "description": "Default server running Visionatrix"
+    }
+  ]
+}

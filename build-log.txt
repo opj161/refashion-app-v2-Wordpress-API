@@ -1,0 +1,203 @@
+--progress is a global compose flag, better use `docker compose --progress xx build ...
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [app internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.59kB done
+#1 DONE 0.0s
+
+#2 [app internal] load metadata for docker.io/library/node:20-alpine
+#2 DONE 0.0s
+
+#3 [app internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [app internal] load build context
+#4 DONE 0.0s
+
+#5 [app base 1/1] FROM docker.io/library/node:20-alpine@sha256:d3507a213936fe4ef54760a186e113db5188472d9efdf491686bd94580a1c1e8
+#5 resolve docker.io/library/node:20-alpine@sha256:d3507a213936fe4ef54760a186e113db5188472d9efdf491686bd94580a1c1e8
+#5 ...
+
+#6 [app auth] library/node:pull token for registry-1.docker.io
+#6 DONE 0.0s
+
+#5 [app base 1/1] FROM docker.io/library/node:20-alpine@sha256:d3507a213936fe4ef54760a186e113db5188472d9efdf491686bd94580a1c1e8
+#5 resolve docker.io/library/node:20-alpine@sha256:d3507a213936fe4ef54760a186e113db5188472d9efdf491686bd94580a1c1e8 1.5s done
+#5 DONE 1.5s
+
+#7 [app builder 1/5] WORKDIR /app
+#7 CACHED
+
+#5 [app base 1/1] FROM docker.io/library/node:20-alpine@sha256:d3507a213936fe4ef54760a186e113db5188472d9efdf491686bd94580a1c1e8
+#5 CACHED
+
+#4 [app internal] load build context
+#4 ...
+
+#8 [app runner 2/9] RUN apk add --no-cache su-exec
+#8 0.529 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/APKINDEX.tar.gz
+#8 0.724 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/x86_64/APKINDEX.tar.gz
+#8 1.562 (1/1) Installing su-exec (0.2-r3)
+#8 1.579 Executing busybox-1.37.0-r18.trigger
+#8 1.589 OK: 10 MiB in 19 packages
+#8 DONE 1.9s
+
+#9 [app deps 1/4] RUN apk add --no-cache libc6-compat
+#9 0.532 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/APKINDEX.tar.gz
+#9 0.727 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/x86_64/APKINDEX.tar.gz
+#9 1.566 (1/3) Installing musl-obstack (1.2.3-r2)
+#9 1.579 (2/3) Installing libucontext (1.3.2-r0)
+#9 1.591 (3/3) Installing gcompat (1.1.0-r4)
+#9 1.608 OK: 10 MiB in 21 packages
+#9 DONE 1.9s
+
+#4 [app internal] load build context
+#4 ...
+
+#10 [app deps 2/4] WORKDIR /app
+#10 DONE 0.0s
+
+#4 [app internal] load build context
+#4 transferring context: 5.36MB 3.2s done
+#4 DONE 3.3s
+
+#11 [app deps 3/4] COPY package.json package-lock.json* ./
+#11 DONE 0.3s
+
+#12 [app deps 4/4] RUN npm install && npm prune --production && npm cache clean --force
+#12 3.969 npm warn deprecated rimraf@2.7.1: Rimraf versions prior to v4 are no longer supported
+#12 5.017 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#12 8.049 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+#12 26.29 
+#12 26.29 added 675 packages, and audited 676 packages in 26s
+#12 26.29 
+#12 26.29 98 packages are looking for funding
+#12 26.29   run `npm fund` for details
+#12 26.31 
+#12 26.31 1 low severity vulnerability
+#12 26.31 
+#12 26.31 To address all issues, run:
+#12 26.31   npm audit fix --force
+#12 26.31 
+#12 26.31 Run `npm audit` for details.
+#12 26.31 npm notice
+#12 26.31 npm notice New major version of npm available! 10.8.2 -> 11.4.1
+#12 26.31 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.1
+#12 26.31 npm notice To update run: npm install -g npm@11.4.1
+#12 26.31 npm notice
+#12 26.45 npm warn config production Use `--omit=dev` instead.
+#12 28.92 
+#12 28.92 up to date, audited 329 packages in 2s
+#12 28.92 
+#12 28.92 65 packages are looking for funding
+#12 28.92   run `npm fund` for details
+#12 28.95 
+#12 28.95 1 low severity vulnerability
+#12 28.95 
+#12 28.95 To address all issues, run:
+#12 28.95   npm audit fix --force
+#12 28.95 
+#12 28.95 Run `npm audit` for details.
+#12 29.07 npm warn using --force Recommended protections disabled.
+#12 DONE 30.8s
+
+#13 [app builder 2/5] COPY --from=deps /app/node_modules ./node_modules
+#13 DONE 4.4s
+
+#14 [app builder 3/5] COPY . .
+#14 DONE 12.6s
+
+#15 [app builder 4/5] RUN mkdir -p public/uploads/user_uploaded_clothing &&     mkdir -p public/uploads/generated_images &&     mkdir -p user_data/history
+#15 DONE 0.6s
+
+#16 [app builder 5/5] RUN npm run build
+#16 0.771 
+#16 0.771 > nextn@0.1.0 build
+#16 0.771 > next build
+#16 0.771 
+#16 1.481    Γû▓ Next.js 15.2.3
+#16 1.481    - Environments: .env
+#16 1.481 
+#16 1.866    Creating an optimized production build ...
+#16 19.28  Γ£ô Compiled successfully
+#16 19.29    Skipping validation of types
+#16 19.29    Skipping linting
+#16 19.55    Collecting page data ...
+#16 21.70    Generating static pages (0/9) ...
+#16 22.24 [getCurrentUser] Attempting to fetch current user session.
+#16 22.26    Generating static pages (2/9) 
+#16 22.27 [getCurrentUser] Attempting to fetch current user session.
+#16 22.27 [getCurrentUser] Attempting to fetch current user session.
+#16 22.27 [getCurrentUser] Attempting to fetch current user session.
+#16 22.29    Generating static pages (4/9) 
+#16 22.31 [getCurrentUser] Attempting to fetch current user session.
+#16 22.34    Generating static pages (6/9) 
+#16 22.40 [getCurrentUser] Attempting to fetch current user session.
+#16 22.40  Γ£ô Generating static pages (9/9)
+#16 23.33    Finalizing page optimization ...
+#16 23.33    Collecting build traces ...
+#16 39.87 
+#16 39.88 Route (app)                                 Size  First Load JS
+#16 39.88 Γöî ╞Æ /                                    61.3 kB         175 kB
+#16 39.88 Γö£ ╞Æ /_not-found                            977 B         101 kB
+#16 39.88 Γö£ ╞Æ /admin                                 506 B         101 kB
+#16 39.88 Γö£ ╞Æ /admin/all-history                   1.49 kB         102 kB
+#16 39.88 Γö£ ╞Æ /admin/playground                      139 B         101 kB
+#16 39.88 Γö£ ╞Æ /api/image-proxy/[...slug]             139 B         101 kB
+#16 39.88 Γöö ╞Æ /login                               2.52 kB         112 kB
+#16 39.88 + First Load JS shared by all             100 kB
+#16 39.88   Γö£ chunks/4bd1b696-c55efc3b14a1bc4a.js  53.2 kB
+#16 39.88   Γö£ chunks/684-7c126003f1aabdc8.js       45.3 kB
+#16 39.88   Γöö other shared chunks (total)          1.91 kB
+#16 39.88 
+#16 39.88 
+#16 39.88 ╞Æ Middleware                             39.9 kB
+#16 39.88 
+#16 39.88 ╞Æ  (Dynamic)  server-rendered on demand
+#16 39.88 
+#16 39.92 npm notice
+#16 39.92 npm notice New major version of npm available! 10.8.2 -> 11.4.1
+#16 39.92 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.1
+#16 39.92 npm notice To update run: npm install -g npm@11.4.1
+#16 39.92 npm notice
+#16 DONE 40.1s
+
+#17 [app runner 3/9] COPY --from=builder /app/public ./public
+#17 DONE 0.2s
+
+#18 [app runner 4/9] COPY --from=builder /app/.next/standalone ./
+#18 DONE 0.6s
+
+#19 [app runner 5/9] COPY --from=builder /app/.next/static ./.next/static
+#19 DONE 0.1s
+
+#20 [app runner 6/9] RUN mkdir -p /app/user_data/history &&     chmod -R 755 /app/user_data
+#20 DONE 0.3s
+
+#21 [app runner 7/9] RUN mkdir -p /app/public/uploads/user_uploaded_clothing &&     mkdir -p /app/public/uploads/generated_images &&     chmod -R 755 /app/public/uploads
+#21 DONE 1.2s
+
+#22 [app runner 8/9] COPY entrypoint.sh /entrypoint.sh
+#22 DONE 0.0s
+
+#23 [app runner 9/9] RUN chmod +x /entrypoint.sh
+#23 DONE 0.4s
+
+#24 [app] exporting to image
+#24 exporting layers
+#24 exporting layers 5.0s done
+#24 exporting manifest sha256:d11d4be7ea06ed0f2aeb9e4a76548b067c3d43f1c76aecf2afac8591c4c3a4f1 0.0s done
+#24 exporting config sha256:1ad4fb3c7a9969799759b0b15fa07a6c55ce0ce0ad3cb2119171300fcc7f35ba done
+#24 exporting attestation manifest sha256:10a7c2fb3d8780076d33dd7effb785657cbd6cd6decdb744b29d7c940a1ca741 0.0s done
+#24 exporting manifest list sha256:b1b03d6294f945afa76691e4d3ab73a8313ab5e4daad8bb6c46be1e98c7202e3 done
+#24 naming to docker.io/library/refashion-app-app:latest done
+#24 unpacking to docker.io/library/refashion-app-app:latest
+#24 unpacking to docker.io/library/refashion-app-app:latest 1.4s done
+#24 DONE 6.6s
+
+#25 [app] resolving provenance for metadata file
+#25 DONE 0.0s
+ app  Built
