@@ -29,6 +29,7 @@ import { getDisplayableImageUrl } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { HistoryItem } from "@/lib/types";
 import { calculateVideoCost, formatPrice, VideoModel, VideoResolution, VideoDuration } from "@/lib/pricing";
+import { useConfigurationStore } from "@/stores/configurationStore";
 
 
 // Type for video generation parameters
@@ -135,14 +136,9 @@ const RenderSelectComponent: React.FC<RenderSelectProps> = ({
 // Component is now prop-less - gets prepared image from Zustand store
 // Props interface for the component
 interface VideoParametersProps {
-  historyItemToLoad?: HistoryItem | null;
-  isLoadingHistory?: boolean;
 }
 
-export default function VideoParameters({ 
-  historyItemToLoad = null, 
-  isLoadingHistory = false 
-}: VideoParametersProps) {
+export default function VideoParameters({}: VideoParametersProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -150,20 +146,14 @@ export default function VideoParameters({
   const activeImage = useActiveImage();
   const preparedImageUrl = activeImage?.dataUri || null;
 
-  // State for video parameters
-  const [videoModel, setVideoModel] = useState<VideoModel>('lite');
-  const [resolution, setResolution] = useState<VideoResolution>('480p');
-  const [duration, setDuration] = useState<VideoDuration>('5');
-  const [seed, setSeed] = useState<string>("-1");
-  const [cameraFixed, setCameraFixed] = useState<boolean>(false);
-  const [estimatedCost, setEstimatedCost] = useState<number | null>(null);
+  // State for video parameters from Zustand store
+  const {
+    videoModel, resolution, duration, seed, cameraFixed,
+    selectedPredefinedPrompt, modelMovement, fabricMotion, cameraAction, aestheticVibe,
+    setParam
+  } = useConfigurationStore();
 
-  // Prompt builder states
-  const [selectedPredefinedPrompt, setSelectedPredefinedPrompt] = useState<string>('custom');
-  const [modelMovement, setModelMovement] = useState<string>(MODEL_MOVEMENT_OPTIONS[0].value);
-  const [fabricMotion, setFabricMotion] = useState<string>(FABRIC_MOTION_OPTIONS_VIDEO[0].value);
-  const [cameraAction, setCameraAction] = useState<string>(CAMERA_ACTION_OPTIONS[0].value);
-  const [aestheticVibe, setAestheticVibe] = useState<string>(AESTHETIC_STYLE_OPTIONS[0].value);
+  const [estimatedCost, setEstimatedCost] = useState<number | null>(null);
 
   // Generation states
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -175,7 +165,6 @@ export default function VideoParameters({
   // For webhook-based flow
   const [generationTaskId, setGenerationTaskId] = useState<string | null>(null);
   const [historyItemId, setHistoryItemId] = useState<string | null>(null);
-  const [loadedHistoryItemId, setLoadedHistoryItemId] = useState<string | null>(null);
   const [progressValue, setProgressValue] = useState(0);
 
   // Check if data URI is provided (not a server URL)
@@ -225,58 +214,11 @@ export default function VideoParameters({
   // Effect to reset resolution if it becomes invalid after a model change
   useEffect(() => {
     if (!resolutionOptions.some(opt => opt.value === resolution)) {
-      setResolution('480p');
+      setParam('resolution', '480p');
     }
-  }, [videoModel, resolution, resolutionOptions]);
+  }, [videoModel, resolution, resolutionOptions, setParam]);
 
-  // Effect to populate state when a history item with video parameters is loaded
-  useEffect(() => {
-    if (historyItemToLoad && !isLoadingHistory && historyItemToLoad.videoGenerationParams && historyItemToLoad.id !== loadedHistoryItemId) {
-      const { videoGenerationParams } = historyItemToLoad;
-      
-      // Set video-specific parameters if they exist
-      if (videoGenerationParams.prompt) {
-        handlePromptChange(videoGenerationParams.prompt);
-      }
-      if (videoGenerationParams.videoModel) {
-        setVideoModel(videoGenerationParams.videoModel);
-      }
-      if (videoGenerationParams.resolution) {
-        setResolution(videoGenerationParams.resolution as '480p' | '720p' | '1080p');
-      }
-      if (videoGenerationParams.duration) {
-        setDuration(videoGenerationParams.duration as '5' | '10');
-      }
-      if (videoGenerationParams.seed !== undefined) {
-        setSeed(videoGenerationParams.seed.toString());
-      }
-      if (videoGenerationParams.cameraFixed !== undefined) {
-        setCameraFixed(videoGenerationParams.cameraFixed);
-      }
-      if (videoGenerationParams.modelMovement) {
-        setModelMovement(videoGenerationParams.modelMovement);
-      }
-      if (videoGenerationParams.fabricMotion) {
-        setFabricMotion(videoGenerationParams.fabricMotion);
-      }
-      if (videoGenerationParams.cameraAction) {
-        setCameraAction(videoGenerationParams.cameraAction);
-      }
-      if (videoGenerationParams.aestheticVibe) {
-        setAestheticVibe(videoGenerationParams.aestheticVibe);
-      }
-      
-      // Mark this history item as loaded to prevent reloading
-      setLoadedHistoryItemId(historyItemToLoad.id);
-      
-      toast({
-        title: "History Restored",
-        description: "Source image and all video parameters have been successfully restored.",
-      });
-    }
-  }, [historyItemToLoad, isLoadingHistory, loadedHistoryItemId, handlePromptChange, toast]);
-
-  const handleRandomSeed = () => setSeed("-1");
+  const handleRandomSeed = () => setParam('seed', "-1");
 
   const handleGenerateVideo = async () => {
     if (!preparedImageUrl) {
@@ -491,15 +433,15 @@ export default function VideoParameters({
             <RenderSelectComponent
               id="predefined-animation"
               label="Predefined Animation"
-              value={selectedPredefinedPrompt} onChange={setSelectedPredefinedPrompt}
+              value={selectedPredefinedPrompt} onChange={(value) => setParam('selectedPredefinedPrompt', value)}
               options={PREDEFINED_PROMPTS}
               disabled={commonFormDisabled}
             />
           </div>
-          <RenderSelectComponent id="model-movement" label="Model Movement" value={modelMovement} onChange={setModelMovement} options={MODEL_MOVEMENT_OPTIONS} disabled={commonFormDisabled || selectedPredefinedPrompt !== 'custom'} />
-          <RenderSelectComponent id="fabric-motion" label="Fabric Motion" value={fabricMotion} onChange={setFabricMotion} options={FABRIC_MOTION_OPTIONS_VIDEO} disabled={commonFormDisabled || selectedPredefinedPrompt !== 'custom'} />
-          <RenderSelectComponent id="camera-action" label="Camera Action" value={cameraAction} onChange={setCameraAction} options={CAMERA_ACTION_OPTIONS} disabled={commonFormDisabled || selectedPredefinedPrompt !== 'custom'} />
-          <RenderSelectComponent id="aesthetic-vibe" label="Aesthetic Vibe" value={aestheticVibe} onChange={setAestheticVibe} options={AESTHETIC_STYLE_OPTIONS} disabled={commonFormDisabled || selectedPredefinedPrompt !== 'custom'} />
+          <RenderSelectComponent id="model-movement" label="Model Movement" value={modelMovement} onChange={(value) => setParam('modelMovement', value)} options={MODEL_MOVEMENT_OPTIONS} disabled={commonFormDisabled || selectedPredefinedPrompt !== 'custom'} />
+          <RenderSelectComponent id="fabric-motion" label="Fabric Motion" value={fabricMotion} onChange={(value) => setParam('fabricMotion', value)} options={FABRIC_MOTION_OPTIONS_VIDEO} disabled={commonFormDisabled || selectedPredefinedPrompt !== 'custom'} />
+          <RenderSelectComponent id="camera-action" label="Camera Action" value={cameraAction} onChange={(value) => setParam('cameraAction', value)} options={CAMERA_ACTION_OPTIONS} disabled={commonFormDisabled || selectedPredefinedPrompt !== 'custom'} />
+          <RenderSelectComponent id="aesthetic-vibe" label="Aesthetic Vibe" value={aestheticVibe} onChange={(value) => setParam('aestheticVibe', value)} options={AESTHETIC_STYLE_OPTIONS} disabled={commonFormDisabled || selectedPredefinedPrompt !== 'custom'} />
 
           {/* Camera Position Control - moved here from Technical Parameters */}
           <div className="md:col-span-2 pt-2 border-t">
@@ -508,7 +450,7 @@ export default function VideoParameters({
                 <Switch 
                   id="cameraFixed" 
                   checked={cameraFixed} 
-                  onCheckedChange={setCameraFixed} 
+                  onCheckedChange={(checked) => setParam('cameraFixed', checked)}
                   disabled={commonFormDisabled} 
                 />
                 <Label htmlFor="cameraFixed" className="text-sm cursor-pointer">
@@ -568,7 +510,7 @@ export default function VideoParameters({
               id="video-model"
               label="Video Model"
               value={videoModel}
-              onChange={(v) => setVideoModel(v as VideoModel)}
+              onChange={(v) => setParam('videoModel', v as VideoModel)}
               options={[
                 { value: 'lite', displayLabel: 'Seedance Lite (Default)', promptSegment: '' },
                 { value: 'pro', displayLabel: 'Seedance Pro (Higher Quality)', promptSegment: '' },
@@ -579,7 +521,7 @@ export default function VideoParameters({
               id="resolution"
               label="Resolution"
               value={resolution}
-              onChange={(v) => setResolution(v as VideoResolution)}
+              onChange={(v) => setParam('resolution', v as VideoResolution)}
               options={resolutionOptions}
               disabled={commonFormDisabled}
               priceData={{ model: videoModel, resolution, duration }}
@@ -588,7 +530,7 @@ export default function VideoParameters({
               id="duration"
               label="Duration"
               value={duration}
-              onChange={(v) => setDuration(v as VideoDuration)}
+              onChange={(v) => setParam('duration', v as VideoDuration)}
               options={[
                 { value: '5', displayLabel: '5 seconds', promptSegment: '' },
                 { value: '10', displayLabel: '10 seconds', promptSegment: '' }
@@ -599,7 +541,7 @@ export default function VideoParameters({
             <div>
               <Label htmlFor="seed" className="text-sm">Seed</Label>
               <div className="flex items-center gap-2 mt-1">
-                <Input id="seed" type="text" value={seed} onChange={(e) => setSeed(e.target.value)} placeholder="-1 for random" disabled={commonFormDisabled} className="text-sm"/>
+                <Input id="seed" type="text" value={seed} onChange={(e) => setParam('seed', e.target.value)} placeholder="-1 for random" disabled={commonFormDisabled} className="text-sm"/>
                 <Button variant="outline" size="icon" onClick={handleRandomSeed} disabled={commonFormDisabled} title="Use Random Seed"><Shuffle className="h-4 w-4" /></Button>
               </div>
             </div>

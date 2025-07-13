@@ -11,6 +11,7 @@ import { getHistoryItemById } from "@/actions/historyActions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useImageStore } from "@/stores/imageStore";
+import { useConfigurationStore } from "@/stores/configurationStore";
 import type { HistoryItem } from "@/lib/types";
 
 export default function CreationHub() {
@@ -22,15 +23,13 @@ export default function CreationHub() {
   const [defaultTab, setDefaultTab] = useState<string>("image");
   const [processedContextId, setProcessedContextId] = useState<string | null>(null);
   const [sourceImageUrl, setSourceImageUrl] = useState<string | null>(null);
-  const [historyItemToLoad, setHistoryItemToLoad] = useState<HistoryItem | null>(null);
-  const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
 
   // Centralized reset function
   const handleReset = useCallback(() => {
     router.push('/create', { scroll: false }); // Update URL first
     resetStore();
     setSourceImageUrl(null);
-    setHistoryItemToLoad(null);
+    useConfigurationStore.getState().resetToDefaults();
     setProcessedContextId(null);
     toast({
       title: "Image Cleared",
@@ -59,22 +58,18 @@ export default function CreationHub() {
 
     // Reset and load history item or source image URL based on URL parameters
     if (currentContextId && currentContextId !== processedContextId) {
-      setHistoryItemToLoad(null);
       if (historyItemId) {
         const loadHistoryData = async () => {
-          setIsLoadingHistory(true);
           try {
             const { success, item, error } = await getHistoryItemById(historyItemId);
             if (success && item) {
-              setHistoryItemToLoad(item);
+              useConfigurationStore.getState().loadFromHistory(item);
               setSourceImageUrl(item.originalClothingUrl || item.videoGenerationParams?.sourceImageUrl || null);
             } else if (!success && error) {
               toast({ title: "Error Loading Configuration", description: error, variant: "destructive" });
             }
           } catch (e) {
             toast({ title: "Error Loading Configuration", description: "An unexpected error occurred.", variant: "destructive" });
-          } finally {
-            setIsLoadingHistory(false);
           }
         };
         loadHistoryData();
@@ -84,7 +79,7 @@ export default function CreationHub() {
       setProcessedContextId(currentContextId);
     } else if (!currentContextId && processedContextId) {
       setSourceImageUrl(null);
-      setHistoryItemToLoad(null);
+      useConfigurationStore.getState().resetToDefaults();
       setProcessedContextId(null);
     }
   }, [searchParams, currentUser, toast, processedContextId, defaultTab]);
@@ -104,10 +99,7 @@ export default function CreationHub() {
             preparationMode="image" 
             onReset={handleReset}
           />
-          <ImageParameters 
-            historyItemToLoad={historyItemToLoad}
-            isLoadingHistory={isLoadingHistory}
-          />
+          <ImageParameters />
         </TabsContent>
 
         <TabsContent value="video" className="space-y-6 mt-8" forceMount>
@@ -116,10 +108,7 @@ export default function CreationHub() {
             preparationMode="video" 
             onReset={handleReset}
           />
-          <VideoParameters 
-            historyItemToLoad={historyItemToLoad}
-            isLoadingHistory={isLoadingHistory}
-          />
+          <VideoParameters />
         </TabsContent>
       </Tabs>
     </div>
